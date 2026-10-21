@@ -1,0 +1,8 @@
+COSWIG NIVEL 1 — Oleadas y recompensas espaciadas
+Todos los enemigos usan el sprite skinhead aprobado. Algunos son cuerpo a cuerpo; otros se quedan a distancia y lanzan piedras o cuchillos usando la animación de puñetazo.
+Parte 1: 5 enemigos; cerveza en el tercero y llave en el quinto (x=1530).
+Parte 2: 12 enemigos; escudo en el décimo (x=3100).
+Parte 3: 15 enemigos; cerveza en el sexto y motosierra en el decimocuarto (x=5260).
+Parte 4: 9 enemigos; cerveza en el sexto.
+Interior del castillo: guardias y jefe siguen la lógica anterior, pero comparten apariencia del enemigo básico (el jefe tiene una escala levemente mayor y más vida).
+No se cambiaron los sprites del héroe ni del enemigo.

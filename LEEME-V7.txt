@@ -1,0 +1,23 @@
+COSWIG V7 · ESCANEO VISUAL REAL (PRIMERA PRUEBA)
+
+1. npm install
+2. npm start
+3. SELECT abre la cámara y pausa la partida, siempre que el control funcione por HTTPS.
+4. Acercá una sola casilla de la pintura a la guía, encuadrada de frente; mantenela quieta.
+5. El teléfono compara color y composición contra los 9 recortes locales sin enviar fotos al servidor.
+6. Se requieren 3 coincidencias consecutivas suficientemente claras. Las ambiguas se rechazan.
+7. Si ya obtuviste el objeto jugando, el escudo pasa a W y la motosierra se equipa en D o R2.
+8. Si no lo obtuviste, verás BLOQUEADO y no se envía orden de equipamiento.
+
+IMPORTANTE
+- El método de V7 compara la apariencia completa de cada casilla; funciona mejor frontal,
+  con encuadre y luz similares a las referencias. No es un modelo IA ni un detector
+  invariante a perspectivas arbitrarias. Puede fallar o confundir objetos: calibrar con
+  fotografías reales del móvil antes de usarlo en exposición.
+- La cámara exige un origen seguro HTTPS en el móvil. El servidor soporta certificados locales:
+  configurar las variables de entorno TLS_KEY y TLS_CERT con rutas a clave y certificado
+  válidos para la dirección desde la que el móvil abre la web, y luego npm start.
+- Un certificado autofirmado no confiable puede seguir bloqueando getUserMedia;
+  instalar una CA local de confianza (p.ej. mkcert) en móvil y PC o usar un HTTPS fiable.
+- Si se usa HTTP, el juego y el mando siguen operativos, pero la cámara no puede activarse.
+- Cerveza y llave siguen siendo automáticas con R y L; el escaneo no las concede.

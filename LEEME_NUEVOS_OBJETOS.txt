@@ -1,0 +1,15 @@
+COSWIG — PRUEBA DE OBJETOS EN PRIMEROS 3 ENEMIGOS
+
+1er enemigo: ESCUDO + LLAVE (dos objetos en el suelo).
+2do enemigo: MOTOSIERRA.
+3er enemigo: CERVEZA.
+
+Recogida automatica al caminar sobre objetos.
+Escudo: equipar con 2; mantener H para bloquear usando la animacion de cuatro fotogramas aprobada del personaje.
+Motosierra: equipar con 4; pulsar M para salto/ataque y avance.
+Cerveza: pulsar B cuando haya al menos una; reproduce la animacion de ocho fotogramas, consume una cerveza y recupera los 12 corazones. No ocupa un hueco de equipamiento.
+La espada y los demas movimientos se mantienen. Solo 2 objetos equipados a la vez.
+La llave sigue sirviendo para abrir el castillo.
+Enemigo basico: sin cambios.
+
+Nota: la animacion de cerveza restaura los corazones al empezar a beber.

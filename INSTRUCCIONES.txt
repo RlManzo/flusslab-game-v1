@@ -1,0 +1,14 @@
+COSWIG — MANDO V2
+
+1. Descomprimí el ZIP.
+2. Abrí una terminal en esta carpeta y ejecutá npm install y npm start.
+3. En la PC abrí http://localhost:3000.
+4. Escaneá el QR desde el celular conectado a la misma red Wi-Fi.
+5. Tocá START en el mando del celular para iniciar. START también pausa y reanuda.
+6. SELECT abre el inventario, donde se equipa espada/motosierra en ataque y escudo en defensa.
+7. Joystick: izquierda/derecha para caminar, abajo para agacharse, arriba para saltar.
+8. A=puño, S=patada, D=ataque especial equipado, W=saltar.
+9. El botón de cámara intenta activar una vista en vivo en el mando. Los navegadores normalmente requieren HTTPS para getUserMedia en el celular; con HTTP por Wi-Fi puede no funcionar. El resto del mando funciona sin cámara.
+10. Si el celular no conecta, permití Node.js en el firewall privado y verificá que ambos equipos estén en la misma Wi-Fi (sin aislamiento de clientes).
+
+No abras index.html directamente: usá npm start.

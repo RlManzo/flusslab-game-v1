@@ -1,0 +1,14 @@
+COSWIG NIVEL 1 — INTEGRACION HEROE + ENEMIGO BASICO
+Abrir index.html desde un servidor local (por ejemplo: python -m http.server 8000), o directamente en Chrome si las imagenes locales cargan.
+
+Se utilizo la version de nivel 1 proporcionada por el usuario como base, conservando panorama, cuatro partes, inventario de dos objetos, llave, escudo, motosierra, castillo y jefe.
+
+HEROE: 62 PNG originales de la demo aprobada: reposo, caminar, punos, patada, espada, esquiva, escudo, motosierra, cerveza.
+ENEMIGO BASICO: 14 PNG originales aprobados: caminar (6) y punetazo (8), a 18 FPS, mirando a la izquierda si el heroe esta a su izquierda.
+Los enemigos basicos de las oleadas ahora usan esos sprites; enemigos especiales y jefe mantienen representacion provisional.
+CONTROLES: A/D movimiento, W salto, S agacharse, J punos, K patada, L espada, F esquiva, H escudo, E puerta, B cerveza, M ataque especial de motosierra (requiere motosierra equipada).
+Al equipar motosierra en el inventario, M permite saltar y avanzar golpeando. Cerveza es una animacion estetica, sin recuperar salud por ahora.
+El enemigo basico se aproxima al heroe y ataca con punetazos. Se mantienen colisiones, vida, dano y oleadas existentes.
+Los sprites se dibujan a escala de escenario y sobre la misma linea de suelo. No se redibujaron las imagenes originales.
+
+AJUSTE DE ESCALA: Todas las animaciones del heroe usan una altura de referencia visual de aproximadamente 108 px (385 px * 0.28). Motosierra usa 0.384 por el menor tamano original de sus fotogramas. Se conserva el anclaje inferior al suelo. Enemigo sin modificaciones.

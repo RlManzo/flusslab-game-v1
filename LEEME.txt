@@ -1,0 +1,3 @@
+COSWIG — ESCUDO + RECOGIDA AUTOMATICA
+H o Shift (o boton ESCUDO): mantener para levantar el escudo. Solo funciona si esta equipado. Bloquea golpes, piedras y cuchillos desde el frente; no protege por detras. Durante bloqueo el heroe queda quieto y no puede atacar. Se crearon cuatro PNG transparentes independientes para animar el escudo. La pose corporal sigue usando el sprite idle existente; aun no es una secuencia corporal dibujada desde cero.
+Al pasar encima de una llave, escudo o motosierra, se recoge automaticamente y permanece en el inventario aunque se desequipe. E queda reservado para entrar al castillo. Maximo dos objetos EQUIPADOS, pero se pueden GUARDAR todos.

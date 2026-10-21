@@ -1,0 +1,12 @@
+CONTROLES
+L: ataque equipado, espada o motosierra.
+F: defensa equipada, esquiva o escudo (mantener F).
+J: puños; K: patada.
+B: consumir cerveza y restaurar 12 corazones.
+E: usar llave frente al castillo; la llave no ocupa ranura.
+1: espada, 2: escudo, 3: llave contextual, 4: motosierra.
+Al recoger el escudo y la motosierra, seleccionarlos con 2 y 4.
+Los primeros tres enemigos dejan escudo (+ llave), motosierra y cerveza.
+El enemigo no fue modificado.
+
+La demo usa los sprites originales aprobados del escudo, no un escudo dibujado por separado. Se corrigio el estado de bloqueo para que no se interrumpa cada fotograma y se desactivo el parpadeo durante el bloqueo.

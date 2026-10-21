@@ -1,0 +1,15 @@
+COSWIG V6 — PRUEBA DE EQUIPAMIENTO MEDIANTE PINTURA
+
+1. npm install
+2. npm start
+3. Abrí http://localhost:3000 en la computadora y conectá el celular por QR.
+4. Presioná START para jugar y SELECT para abrir la pantalla de referencias.
+5. Las nueve imágenes de la pintura original están precargadas en references/.
+6. Tocá cada imagen para PROBAR la selección: no es aún reconocimiento automático por cámara.
+7. El escudo se obtiene al derrotar al enemigo correspondiente en la segunda parte; la motosierra, en la tercera. No pueden equiparse antes.
+8. Escudo: ocupa W, que antes de tener escudo esquiva. Motosierra: puede equiparse en D o R2. R2 es una nueva ranura de ataque único.
+9. Llave (L) y cerveza (R) se usan directamente, sin SELECT.
+
+CÁMARA: SELECT solicita la cámara trasera, pero el navegador móvil requiere HTTPS. En HTTP por IP local es normal que no permita el acceso. El visor de cámara de V6 NO realiza todavía reconocimiento visual automático; esta versión valida el inventario, las nueve referencias, el control y las reglas de equipamiento. No se agregó una falsa detección visual que podría equipar el objeto equivocado.
+
+Los objetos adicionales de la pintura todavía no tienen mecanismos de obtención ni habilidades implementadas; permanecen bloqueados.
