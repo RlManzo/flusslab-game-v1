@@ -25,7 +25,7 @@ button,.stick-area,.gamepad,.camera,.shoulders,.system{-webkit-tap-highlight-col
 <div class="shoulders"><button id="useUnique" class="shoulder" data-action="unique">R2</button><button id="useKey" class="shoulder" data-action="interact">L</button><button id="useBeer" class="shoulder" data-action="cerveza">R</button></div><div class="gamepad"><div class="stick-area" id="stick"><div class="stick-ring" id="ring"><div class="stick-knob" id="knob"></div></div><span class="stick-caption">JOYSTICK</span></div><div class="buttons"><button class="face w" data-action="defend">W</button><button class="face a" data-action="punch">A</button><button class="face d" data-action="sword">D</button><button class="face s" data-action="kick">S</button></div></div>
 <div class="foot">COSWIG · CONTROL</div>
 <div id="join" class="overlay"><div class="panel"><h2>COSWIG · CONECTAR</h2><p>Escaneá el QR de la computadora para vincular este mando.</p><input id="code" inputmode="numeric" maxlength="6" placeholder="CÓDIGO"><button class="wide" id="connect">CONECTAR</button><p id="error"></p></div></div>
-<div id="inventory" class="overlay hide"><div class="panel" id="selectPanel"><h2>SELECT · PINTURA</h2><div class="slots" id="slots"></div><p>Encuadrá UN objeto de la pintura en el recuadro. Mantené el celular firme. Solo podrás equipar objetos que hayas conseguido.</p><div id="scanView" style="position:relative;overflow:hidden;border:2px solid #bfa66c;border-radius:10px;background:#091912"><video id="scanVideo" playsinline autoplay muted style="width:100%;height:34dvh;min-height:160px;object-fit:cover;display:block"></video><div style="position:absolute;left:24%;top:18%;width:52%;height:64%;border:2px dashed #ddce86;pointer-events:none;box-shadow:0 0 0 500px #0002"></div><span style="position:absolute;left:8px;bottom:6px;font:10px monospace;background:#071a12aa;padding:3px">ENCUADRÁ UNA CASILLA</span></div><p id="scanStatus" aria-live="polite">Cámara apagada</p><p id="selectionStatus" aria-live="polite"></p><div id="slotChoice" class="hide"><button id="slotAttack">EQUIPAR EN D</button> <button id="slotUnique">EQUIPAR EN R2</button></div><button class="wide" id="retryScan">REINICIAR ESCANEO</button><button class="wide" id="closeInventory" style="margin-top:8px">VOLVER AL JUEGO</button><details style="margin-top:10px;text-align:left"><summary style="font:11px monospace">Diagnóstico de cámara</summary><p id="scanDebug" style="font:10px monospace"></p></details></div></div>
+<div id="inventory" class="overlay hide"><div class="panel" id="selectPanel"><h2>SELECT · PINTURA</h2><div class="slots" id="slots"></div><p>Encuadrá UN objeto de la pintura en el recuadro. Mantené el celular firme. Solo podrás equipar objetos que hayas conseguido.</p><div id="scanView" style="position:relative;overflow:hidden;border:2px solid #bfa66c;border-radius:10px;background:#091912"><video id="scanVideo" playsinline autoplay muted style="width:100%;height:34dvh;min-height:160px;object-fit:cover;display:block"></video><div style="position:absolute;left:24%;top:18%;width:52%;height:64%;border:2px dashed #ddce86;pointer-events:none;box-shadow:0 0 0 500px #0002"></div><span style="position:absolute;left:8px;bottom:6px;font:10px monospace;background:#071a12aa;padding:3px">ENCUADRÁ UNA CASILLA</span></div><p id="scanStatus" aria-live="polite">Cámara apagada</p><p id="selectionStatus" aria-live="polite"></p><div id="scanConfirm" class="hide" style="padding:9px;background:#1b332a;border:1px solid #bfa66c;border-radius:8px"><p id="candidateText" style="margin:4px 0 10px"></p><button class="wide" id="confirmMatch" type="button">CONFIRMAR OBJETO</button></div><div id="slotChoice" class="hide"><button id="slotAttack">EQUIPAR EN D</button> <button id="slotUnique">EQUIPAR EN R2</button></div><button class="wide" id="retryScan">REINICIAR ESCANEO</button><button class="wide" id="closeInventory" style="margin-top:8px">VOLVER AL JUEGO</button><details style="margin-top:10px;text-align:left"><summary style="font:11px monospace">Diagnóstico de cámara</summary><p id="scanDebug" style="font:10px monospace"></p></details></div></div>
 <script>
 // Evitar zoom por pellizco/doble toque, scroll elástico y menú de pulsación larga.
 // Conservamos el teclado del código y el desplazamiento dentro del inventario.
@@ -55,7 +55,7 @@ function sendModal(open){if(connected&&ws?.readyState===WebSocket.OPEN)ws.send(J
 const SCAN_W=36, SCAN_H=44, scanCanvas=document.createElement('canvas');
 scanCanvas.width=SCAN_W;scanCanvas.height=SCAN_H;
 const scanCtx=scanCanvas.getContext('2d',{willReadFrequently:true});
-const refFeatures=new Map();let scannerTimer=null,scanBusy=false,lastCandidate='',candidateFrames=0,lastAccepted='',scannerGeneration=0;
+const refFeatures=new Map();let scannerTimer=null,scanBusy=false,lastCandidate='',candidateFrames=0,lastAccepted='',scannerGeneration=0,pendingCandidate=null;
 function featureFromImage(img){
  const d=img.data, n=SCAN_W*SCAN_H, out=new Float32Array(n*3);
  let r=0,g=0,b=0;for(let i=0;i<n;i++){r+=d[i*4];g+=d[i*4+1];b+=d[i*4+2]}
@@ -80,44 +80,64 @@ async function loadReferences(){
 const refsLoaded=loadReferences();
 function detectObject(video){
  const vw=video.videoWidth,vh=video.videoHeight;if(!vw||!vh||refFeatures.size!==refs.length)return null;
- // La retícula marca el área que se compara. Se evalúan varios tamaños y leves desplazamientos.
- let best={id:null,score:-1},second=-1;
- for(const scale of [0.42,0.50,0.59,0.69]){
-  const h=vh*scale,w=Math.min(vw*.90,h*(SCAN_W/SCAN_H));
-  for(const dx of [-.07,0,.07])for(const dy of [-.06,0,.06]){
+ // Una puntuación máxima por OBJETO. Antes la segunda mejor puntuación
+ // podía corresponder al mismo objeto en otro recorte y falsear el margen.
+ const byId=new Map(refs.map(id=>[id,-1]));
+ for(const scale of [0.36,0.42,0.50,0.59,0.69,0.79]){
+  const h=vh*scale,w=Math.min(vw*.94,h*(SCAN_W/SCAN_H));
+  for(const dx of [-.12,-.06,0,.06,.12])for(const dy of [-.10,0,.10]){
    const x=(vw-w)/2+dx*vw,y=(vh-h)/2+dy*vh;
    if(x<0||y<0||x+w>vw||y+h>vh)continue;
    const f=extractFeature(video,x,y,w,h);
    for(const [id,ref] of refFeatures){const score=similarity(f,ref);
-    if(score>best.score){if(best.id!==id)second=Math.max(second,best.score);best={id,score}}
-    else if(id!==best.id)second=Math.max(second,score);
+    if(score>byId.get(id))byId.set(id,score);
    }
   }
  }
- return {...best,margin:best.score-second};
+ const ranked=[...byId].map(([id,score])=>({id,score})).sort((a,b)=>b.score-a.score);
+ const best=ranked[0],second=ranked[1];
+ return {...best,margin:best.score-second.score,runnerUp:second.id};
 }
+function clearCandidate(){pendingCandidate=null;$('scanConfirm').classList.add('hide')}
+function confirmCandidate(){
+ if(!pendingCandidate||!hostState.owned?.includes(pendingCandidate.id))return;
+ const id=pendingCandidate.id;
+ lastAccepted=id;chooseReference(id);clearCandidate();
+ $('scanStatus').textContent='CONFIRMADO: '+names[id];
+}
+$('confirmMatch').onclick=confirmCandidate;
 function scanTick(){
  if(!cameraStream||$('inventory').classList.contains('hide')||scanBusy)return;
  const video=$('scanVideo');if(video.readyState<2)return;
  scanBusy=true;
  try{
-  const match=detectObject(video);
-  if(!match)return;
-  $('scanDebug').textContent='Mejor coincidencia: '+(names[match.id]||'—')+' · similitud '+match.score.toFixed(2)+' · diferencia '+match.margin.toFixed(2);
-  // Umbral conservador: evita equipamientos por cuadros ambiguos.
-  if(match.score>=.77&&match.margin>=.055){
-    if(lastCandidate===match.id)candidateFrames++;else{lastCandidate=match.id;candidateFrames=1}
-    $('scanStatus').textContent='Detectando '+names[match.id]+'… ('+Math.min(candidateFrames,3)+'/3)';
-    if(candidateFrames>=3&&lastAccepted!==match.id){
-      lastAccepted=match.id;chooseReference(match.id);
-      $('scanStatus').textContent='RECONOCIDO: '+names[match.id];
+  const match=detectObject(video);if(!match)return;
+  $('scanDebug').textContent='Mejor: '+names[match.id]+' · similitud '+match.score.toFixed(2)+' · segundo: '+names[match.runnerUp]+' · margen '+match.margin.toFixed(2);
+  // Coincidencias moderadas, como 0,37, requieren confirmación explícita;
+  // siempre se exige un margen mínimo y varios fotogramas consistentes.
+  const plausible=match.score>=.32 && match.margin>=.025;
+  if(plausible){
+   if(lastCandidate===match.id)candidateFrames++;else{lastCandidate=match.id;candidateFrames=1;clearCandidate()}
+   if(candidateFrames>=4){
+    if(!hostState.owned?.includes(match.id)){
+     clearCandidate();$('scanStatus').textContent='DETECTADO: '+names[match.id]+' (bloqueado)';
+     $('selectionStatus').textContent='BLOQUEADO: todavía no conseguiste '+names[match.id]+' en el juego.';
+    }else if(lastAccepted!==match.id && !pendingCandidate){
+     pendingCandidate={id:match.id,score:match.score};
+     $('candidateText').textContent='¿Es '+names[match.id]+'? Coincidencia '+match.score.toFixed(2)+'. Confirmá para equiparlo.';
+     $('scanConfirm').classList.remove('hide');
+     $('scanStatus').textContent='OBJETO POSIBLE: '+names[match.id];
     }
-  }else{lastCandidate='';candidateFrames=0;$('scanStatus').textContent='Buscando objeto… acercá una casilla al recuadro y mantené la imagen estable.'}
+   }else{$('scanStatus').textContent='Verificando '+names[match.id]+'… ('+candidateFrames+'/4)'}
+  }else{
+   lastCandidate='';candidateFrames=0;clearCandidate();
+   $('scanStatus').textContent='Sin coincidencia segura. Encuadrá una casilla, acercate y evitá reflejos.';
+  }
  }catch(e){$('scanDebug').textContent='Error de reconocimiento: '+e.message}
  finally{scanBusy=false}
 }
 async function stopScan(){
- scannerGeneration++;if(scannerTimer){clearInterval(scannerTimer);scannerTimer=null}
+ clearCandidate();scannerGeneration++;if(scannerTimer){clearInterval(scannerTimer);scannerTimer=null}
  if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null}
  $('scanVideo').srcObject=null;$('scanStatus').textContent='Cámara apagada';
 }
@@ -130,11 +150,11 @@ async function startScan(){
   const stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:640},height:{ideal:480}}});
   if(current!==scannerGeneration||$('inventory').classList.contains('hide')){stream.getTracks().forEach(t=>t.stop());return}
   cameraStream=stream;$('scanVideo').srcObject=stream;await $('scanVideo').play();
-  lastCandidate='';candidateFrames=0;lastAccepted='';selectedObject=null;
+  lastCandidate='';candidateFrames=0;lastAccepted='';selectedObject=null;clearCandidate();
   $('scanStatus').textContent='Buscando objeto…';scannerTimer=setInterval(scanTick,450);
  }catch(e){$('scanStatus').textContent='No se pudo abrir la cámara: '+e.message+'; comprobá HTTPS y permisos.'}
 }
-$('retryScan').onclick=()=>{lastCandidate='';candidateFrames=0;lastAccepted='';selectedObject=null;$('slotChoice').classList.add('hide');$('selectionStatus').textContent='';if(cameraStream)$('scanStatus').textContent='Buscando objeto…';else startScan()};
+$('retryScan').onclick=()=>{clearCandidate();lastCandidate='';candidateFrames=0;lastAccepted='';selectedObject=null;clearCandidate();$('slotChoice').classList.add('hide');$('selectionStatus').textContent='';if(cameraStream)$('scanStatus').textContent='Buscando objeto…';else startScan()};
 
 function connect(){if(ws)ws.close();connected=false;err.textContent='';status.textContent='Conectando…';ws=new WebSocket((location.protocol==='https:'?'wss:':'ws:')+'//'+location.host+'/ws');ws.onopen=()=>ws.send(JSON.stringify({type:'join',code:codeInput.value.trim()}));ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch{return}if(m.type==='joined'){connected=true;$('join').classList.add('hide');status.textContent='● Conectado';renderState()}if(m.type==='host_state'){hostState={...hostState,...m};renderState()}if(m.type==='error'){err.textContent=m.message;status.textContent='Desconectado';connected=false;$('join').classList.remove('hide')}};ws.onclose=()=>{connected=false;status.textContent='Desconectado';$('join').classList.remove('hide');err.textContent='Conexión perdida. Volvé a conectar.'}}
 $('connect').onclick=connect;if(codeInput.value)connect();
