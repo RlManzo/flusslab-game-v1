@@ -14,7 +14,16 @@ for(const [key,[n]] of Object.entries(anims)){sprites[key]=[];for(let i=1;i<=n;i
 for(const [name,n] of Object.entries({walk:6,punch:8})){
  for(let i=1;i<=n;i++){const im=new Image();im.src=`sprites/enemigo/${name}_${String(i).padStart(2,'0')}.png`;enemyAnims[name].push(im)}
 }
-const panorama=new Image();panorama.src='assets/coswig_ilustracion_altura_completa.jpg';
+// V11: panorama precortado para no subir una textura de 8640px a la GPU cada frame.
+const PANORAMA_TILE_WIDTH=540, panoramaTiles=[];
+for(let i=0;i<16;i++){const im=new Image();im.decoding='async';im.src=`assets/panorama_tiles/tile_${String(i).padStart(2,'0')}.jpg`;panoramaTiles.push(im)}
+function drawPanorama(){
+ const first=Math.max(0,Math.floor(cam/PANORAMA_TILE_WIDTH)), offset=Math.round(cam-first*PANORAMA_TILE_WIDTH);
+ for(let i=first;i<=Math.min(first+1,panoramaTiles.length-1);i++){
+  const im=panoramaTiles[i];
+  if(im?.complete&&im.naturalWidth)c.drawImage(im,(i-first)*PANORAMA_TILE_WIDTH-offset,0);
+ }
+}
 for(const [name,file] of Object.entries({sky:'cielo_verde.png',far:'siluetas.png',ground:'piso.png',front:'decoracion_frontal.png'})){const im=new Image();im.src='assets/'+file;layerAssets[name]=im}
 const skyColors=[['#102f26','#376e45'],['#153e2e','#4a7b4b'],['#1b4735','#658052'],['#253f36','#827c56']];
 function blendHex(a,b,t){const pa=a.slice(1).match(/../g).map(x=>parseInt(x,16)),pb=b.slice(1).match(/../g).map(x=>parseInt(x,16));return '#'+pa.map((v,i)=>Math.round(v+(pb[i]-v)*t).toString(16).padStart(2,'0')).join('')}
@@ -118,7 +127,7 @@ if(e.role!=='melee'&&e.shot<=0&&Math.abs(dx)<480&&e.anim!=='punch'){
 projectiles=projectiles.filter(q=>q.life>0&&Math.abs(q.x-hero.x)<750);
 if(hero.hp<=0){ended=true;say('DERROTA — Presioná Reiniciar.',999)}if(interior){if(castleWave===1&&enemies.every(e=>e.dead)){castleWave=2;enemies=[spawn(420,'boss',GROUND)];bossSpawned=true;say('¡APARECE EL JEFE DEL NIVEL! Combiná puños, patadas y armas.',6)}}else{for(let i=0;i<4;i++){let ph=phases[i];if(ph.spawned&&!ph.cleared&&enemies.filter(e=>!e.dead&&e.x>=ph.start&&e.x<ph.end).length===0){ph.cleared=true;say(`¡PARTE ${i+1} SUPERADA! ${i===3?'Usá E frente al castillo con la llave en inventario.':'Avanzá a la derecha.'}`,4)}if(i<3&&ph.cleared&&hero.x>=ph.end-140)spawnPhase(i+1)}}cam=interior?0:Math.max(0,Math.min(WORLD-540,hero.x-190))}
 function rect(x,y,w,h,color){c.fillStyle=color;c.fillRect(Math.round(x),Math.round(y),w,h)}function label(text,x,y,color='#ffe4ae',font='15px monospace'){c.fillStyle=color;c.font=font;c.fillText(text,x,y)}
-function draw(){rect(0,0,540,960,'#142b29');if(interior){rect(0,65,540,895,'#292e31');for(let i=0;i<540;i+=80){rect(i,110,3,850,'#424449');rect(i,340,80,5,'#555052')}rect(0,780,540,180,'#55504b');for(let i=0;i<540;i+=64)rect(i,875,60,2,'#72695b');for(let x of [120,450,800]){rect(x,185,18,185,'#57504b');rect(x-16,180,50,13,'#9d8a67');rect(x-8,155,33,25,'#e99b42')}label('INTERIOR DEL CASTILLO',105,120,'#e7c18a','23px Georgia')}else{if(panorama.complete&&panorama.naturalWidth){c.drawImage(panorama,Math.round(cam),0,540,960,0,0,540,960)}else{rect(0,85,540,875,'#164233')}}
+function draw(){rect(0,0,540,960,'#142b29');if(interior){rect(0,65,540,895,'#292e31');for(let i=0;i<540;i+=80){rect(i,110,3,850,'#424449');rect(i,340,80,5,'#555052')}rect(0,780,540,180,'#55504b');for(let i=0;i<540;i+=64)rect(i,875,60,2,'#72695b');for(let x of [120,450,800]){rect(x,185,18,185,'#57504b');rect(x-16,180,50,13,'#9d8a67');rect(x-8,155,33,25,'#e99b42')}label('INTERIOR DEL CASTILLO',105,120,'#e7c18a','23px Georgia')}else{drawPanorama()}
 if(!interior){
 const gate=6900-cam;if(gate>-120&&gate<650){label('E: CASTILLO',gate-58,GROUND-125,'#ffe7a8','16px monospace')}}
 for(const d of drops){if(d.taken)continue;const x=d.x-cam,y=d.y-60;if(x<0||x>540)continue;rect(x-20,y-22,40,34,d.type==='shield'?'#647a9a':d.type==='beer'?'#c68b3c':'#a36d38');rect(x-14,y-16,28,22,d.type==='shield'?'#9cb9d6':d.type==='beer'?'#f7d17a':'#e3b451');label(d.type==='shield'?'ESCUDO':d.type==='chainsaw'?'MOTOSIERRA':d.type==='key'?'LLAVE':d.type==='beer'?'CERVEZA':'OBJETO',x-45,y-32,'#fff0b6','12px monospace')}
@@ -147,7 +156,22 @@ if(hero.beers>0)label('CERVEZA x'+hero.beers+'  R',330,51,'#f6d88b','14px monosp
 label('D: '+(itemNames[hero.attackSlot]||'Espada')+'   W: '+(hero.defenseSlot==='shield'?'Escudo':'Esquiva'),12,76,'#ffe4ae','13px monospace');
 if(hero.uniqueSlot)label('R2: '+(itemNames[hero.uniqueSlot]||specialNames[hero.uniqueSlot]||hero.uniqueSlot),325,76,'#ffe4ae','13px monospace');
 if(noticeTimer>0||ended){rect(0,912,540,48,'rgba(7,22,20,.93)');label(notice.slice(0,62),12,939,'#ffe5aa','12px monospace')}if(!interior){for(let i=0;i<4;i++){rect(i*135,85,133,5,phases[i].cleared?'#80c7a0':phases[i].spawned?'#f0c46d':'#4b5c54')}}}
-function loop(t){let dt=Math.min(.04,(t-last)/1000||0);last=t;update(dt);draw();requestAnimationFrame(loop)}reset();requestAnimationFrame(loop);
+// V11: render configurable. 30 FPS estables para Pi; ?fps=60 en equipos potentes.
+const requestedFPS=Number(new URLSearchParams(location.search).get('fps'));
+const targetFPS=[30,60].includes(requestedFPS)?requestedFPS:30;
+const targetFrameMS=1000/targetFPS;
+let nextFrame=0;
+function loop(t){
+ requestAnimationFrame(loop);
+ if(t<nextFrame)return;
+ const dt=Math.min(.04,(t-last)/1000||0);
+ last=t;
+ nextFrame=t+targetFrameMS-1;
+ // Evitar render constante mientras el mando aún no inició o SELECT pausa el juego.
+ if(!gameStarted || gamePaused){return;}
+ update(dt);draw();
+}
+reset();requestAnimationFrame(loop);
 
 // Control remoto desde el celular: WebSocket a través del servidor local.
 // Las pulsaciones sostenidas se sincronizan como estados; las acciones son eventos.
