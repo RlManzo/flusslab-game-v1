@@ -542,7 +542,7 @@ if(hero.beers>0){drawItemArt('beer',403,7,42,45);label('×'+hero.beers,449,34,'#
 if(hero.defenseSlot==='shield'){drawItemArt('shield',215,41,41,41);label('W',252,68,'#f6d88b','12px monospace')}
 if(hero.attackSlot==='chainsaw'){drawItemArt('chainsaw',294,43,53,34);label('D',349,68,'#f6d88b','12px monospace')}
 if(hero.uniqueSlot){drawItemArt(hero.uniqueSlot,407,46,47,34);label('R2',456,69,'#f6d88b','12px monospace')}
-if(!interior){for(let i=0;i<4;i++){rect(i*135,85,133,5,phases[i].cleared?'#80c7a0':phases[i].spawned?'#f0c46d':'#4b5c54')}}drawAcquired();if(hero.state==='death'&&hero.frame===anims.death[0]-1){rect(68,385,404,88,'rgba(7,15,17,.78)');label(tr('DERROTA'),175,433,'#ff9691','bold 39px monospace');label(tr('PRESIONÁ REINICIAR'),115,464,'#ffe4ae','18px monospace')}}
+if(!interior){for(let i=0;i<4;i++){rect(i*135,85,133,5,phases[i].cleared?'#80c7a0':phases[i].spawned?'#f0c46d':'#4b5c54')}}drawAcquired();if(hero.state==='death'&&hero.frame===anims.death[0]-1){rect(68,385,404,88,'rgba(7,15,17,.78)');label(tr('DERROTA'),175,433,'#ff9691','bold 39px monospace');label(({en:'PRESS START TO RESTART',es:'START PARA REINICIAR',de:'START FÜR NEUSTART'})[currentLanguage],110,464,'#ffe4ae','17px monospace')}}
 // V11: render configurable. 30 FPS estables para Pi; ?fps=60 en equipos potentes.
 const requestedFPS=Number(new URLSearchParams(location.search).get('fps'));
 const targetFPS=[30,60].includes(requestedFPS)?requestedFPS:30;
@@ -640,12 +640,12 @@ updateRecommendedWifi(new URLSearchParams(location.search).get('wifi'));
 
 function sendPhoneState(){
  if(remoteSocket?.readyState!==WebSocket.OPEN||!phoneConnected)return;
- remoteSocket.send(JSON.stringify({type:'host_state',started:gameStarted,paused:gamePaused,attack:hero.attackSlot,defense:hero.defenseSlot,unique:hero.uniqueSlot,owned:[...hero.owned],beers:hero.beers,hp:hero.hp,itemNotice:!!acquiredNotice,storyPending,language:currentLanguage}));
+ remoteSocket.send(JSON.stringify({type:'host_state',started:gameStarted,paused:gamePaused,attack:hero.attackSlot,defense:hero.defenseSlot,unique:hero.uniqueSlot,owned:[...hero.owned],beers:hero.beers,hp:hero.hp,ended:ended,itemNotice:!!acquiredNotice,storyPending,language:currentLanguage}));
 }
 function phoneStart(){
  if(!phoneConnected||acquiredNotice)return;
  if(!gameStarted){gameStarted=true;gamePaused=false;startEl.style.display='none';last=performance.now();if(!storyShown)showStoryPrologue()}
- else if(ended){reset();gamePaused=false}
+ else if(ended){restartGame();return}
  else gamePaused=!gamePaused;
  sendPhoneState();
 }
@@ -707,13 +707,25 @@ function connectRemote(){
 }
 
 connectRemote();
-// RESTART conserva la vinculación con el celular y vuelve al nivel 1.
+// RESTART (desde pausa o derrota) reinicia toda la experiencia y exige otro QR.
+// El servidor invalida el código anterior y expulsa al mando viejo.
 function restartGame(){
  clearRemoteHold();keys.clear();for(const key in hold)hold[key]=false;
- reset();gameStarted=true;gamePaused=false;storyPending=false;storyEl.classList.remove('is-active');storyEl.setAttribute('aria-hidden','true');startEl.style.display='none';
+ gameAudio.music.pause();gameAudio.music.currentTime=0;
+ for(const voice of [...attackVoices,gameAudio.hurt,gameAudio.hallo]){voice.pause();voice.currentTime=0}
+ gameStarted=false;gamePaused=false;storyPending=false;storyShown=false;
+ storyEl.classList.remove('is-active');storyEl.setAttribute('aria-hidden','true');
+ startEl.style.display='flex';
+ pauseEl.style.display='none';
+ phoneConnected=false;remoteSession=null;
+ const qr=document.getElementById('pairQR');qr.removeAttribute('src');qr.style.display='none';
+ statusEl.classList.remove('connected');
+ statusEl.textContent='Preparing a new QR code…';
+ reset();setLanguage('en');
  last=performance.now();nextFrame=0;
- pauseEl.style.display='none';sendPhoneState();
+ if(remoteSocket?.readyState===WebSocket.OPEN){remoteSocket.send(JSON.stringify({type:'reset_session'}))}
 }
+
 // Menú de pausa visible en pantalla, con restart también accesible en el celular.
 const pauseEl=document.createElement('div');pauseEl.id='pauseOverlay';
 pauseEl.style.cssText='display:none;position:fixed;inset:0;z-index:88;background:rgba(4,18,14,.46);color:#ffe6aa;align-items:center;justify-content:center;text-align:center;font:bold 24px monospace;padding:30px';

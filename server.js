@@ -75,6 +75,21 @@ wss.on('connection',ws=>{
    if(r.controller&&r.controller.readyState===WebSocket.OPEN){send(ws,{type:'error',message:'Ya hay un celular conectado a esta partida.'});return}
    role='controller';room=r;room.controller=ws;send(ws,{type:'joined'});notify(room);return;
   }
+  // Volver al inicio invalida el QR anterior: el celular debe escanear uno nuevo.
+  if(role==='host'&&room&&m.type==='reset_session'){
+   const oldController=room.controller;
+   room.controller=null;
+   if(oldController){send(oldController,{type:'session_reset'});oldController.close(1000,'New game: scan the new QR')}
+   rooms.delete(room.code);
+   room.code=code();rooms.set(room.code,room);
+   try{
+    const url=sessionOrigin(ws.upgradeRequest||{})+'/controller?code='+room.code;
+    const qr=await QRCode.toDataURL(url,{width:220,margin:1,errorCorrectionLevel:'M'});
+    send(ws,{type:'session',code:room.code,url,qr,wifiSsid:process.env.COSWIG_WIFI_SSID||''});
+    notify(room);
+   }catch(err){console.error('QR reset:',err.message);send(ws,{type:'error',message:'No se pudo generar el nuevo QR.'})}
+   return;
+  }
   if(role==='host'&&room&&m.type==='host_state'){send(room.controller,m);return}
   if(role==='controller'&&room&&room.controller===ws){
    if(m.type==='modal'){send(room.host,{type:'input',kind:'modal',open:m.open===true});return}
