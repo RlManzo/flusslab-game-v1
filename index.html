@@ -272,7 +272,7 @@ function drawAcquired(){
 const guardFrames=Array.from({length:4},(_,i)=>{const im=new Image();im.src=`sprites/shield_guard_${String(i+1).padStart(2,'0')}.png`;return im});const itemNames={sword:'Espada',shield:'Escudo',key:'Llave',chainsaw:'Motosierra'};const inventoryEl=document.querySelector('#inventory');const specialNames={book:'Libro',lantern:'Farol',hedgehog:'Erizo',emblem:'Emblema',red:'Objeto rojo'};
 function say(t,time=3){/* V12: sin mensajes de combate ni textos de ayuda sobre el juego. */}
 function spawn(x,type='basic',y=GROUND){if(type==='basic'){normalEnemyCounter++;if(normalEnemyCounter%3===0)type='hooligan'}let hp=type==='boss'?34:type==='chainsaw'?17:type==='heavy'?7:3;return {id:++enemyCounter,x,y,hp,max:hp,type,stun:0,inv:0,attack:0,face:-1,dead:false,drop:null,triggered:false,shot:1.5+Math.random()*1.2,throwPending:null,anim:'walk',animFrame:0,animTime:0,attackWindup:0,role:type==='hooligan'?'knife':'melee'}}
-function reset(){nextHalloAt=performance.now()+5000;hero={x:140,y:GROUND,face:1,hp:MAX_HP,state:'idle',frame:0,elapsed:0,inv:0,dodgeDir:0,combo:0,comboTime:0,owned:new Set(['sword']),equipped:['sword'],attackSlot:'sword',defenseSlot:'dodge',uniqueSlot:null,beers:0,swing:0,jumpHeight:0,jumpV:0,crouch:false,blocking:false,blockTime:0,hitTime:0};enemies=[];drops=[];projectiles=[];phases=[{start:0,end:1800,count:5,spawned:false,cleared:false},{start:1800,end:3600,count:12,spawned:false,cleared:false,kills:0,shieldGiven:false},{start:3600,end:5400,count:15,spawned:false,cleared:false,midBoss:false},{start:5400,end:7200,count:9,spawned:false,cleared:false}];cam=0;ended=false;interior=false;castleWave=0;bossSpawned=false;enemyCounter=0;normalEnemyCounter=0;attackHits=new Set();acquiredNotice=null;acquiredQueue=[];say('PARTE 1 — Enfrentá la primera oleada. La llave está más adelante.');spawnPhase(0);renderInventory()}
+function reset(){halloCooldown=0;halloNearby=false;hero={x:140,y:GROUND,face:1,hp:MAX_HP,state:'idle',frame:0,elapsed:0,inv:0,dodgeDir:0,combo:0,comboTime:0,owned:new Set(['sword']),equipped:['sword'],attackSlot:'sword',defenseSlot:'dodge',uniqueSlot:null,beers:0,swing:0,jumpHeight:0,jumpV:0,crouch:false,blocking:false,blockTime:0,hitTime:0};enemies=[];drops=[];projectiles=[];phases=[{start:0,end:1800,count:5,spawned:false,cleared:false},{start:1800,end:3600,count:12,spawned:false,cleared:false,kills:0,shieldGiven:false},{start:3600,end:5400,count:15,spawned:false,cleared:false,midBoss:false},{start:5400,end:7200,count:9,spawned:false,cleared:false}];cam=0;ended=false;interior=false;castleWave=0;bossSpawned=false;enemyCounter=0;normalEnemyCounter=0;attackHits=new Set();acquiredNotice=null;acquiredQueue=[];say('PARTE 1 — Enfrentá la primera oleada. La llave está más adelante.');spawnPhase(0);renderInventory()}
 function spawnPhase(p){let ph=phases[p];if(ph.spawned)return;ph.spawned=true;
 const xs=p===0?[420,680,930,1220,1530]:p===1?[1870,2000,2140,2270,2410,2550,2680,2820,2950,3100,3250,3400]:p===2?[3680,3810,3940,4060,4190,4320,4450,4570,4690,4810,4930,5050,5160,5260,5340]:[5520,5700,5870,6040,6210,6370,6510,6660,6800];
 xs.forEach((x,i)=>{const e=spawn(x,p===2&&i===13?'chainsaw':p===3&&i===8?'heavy':'basic',GROUND);
@@ -308,39 +308,74 @@ function toggleEquip(name,slot){
  say(`ATAQUE: ${itemNames[hero.attackSlot]} · DEFENSA: ${hero.defenseSlot==='shield'?'Escudo':'Esquiva'}`,3);
  renderInventory();
 }
-// V23: grabaciones originales del artista y música chiptune aprobada.
+// V25: música elegida + voces originales. El audio empieza al salir del prólogo.
+// IMPORTANTE: A llega por WebSocket. En Chrome estándar no desbloquea autoplay;
+// la instalación dedicada debe lanzar Chromium con --autoplay-policy=no-user-gesture-required.
 const gameAudio={
  music:new Audio('assets/audio/arcade_battle_theme.mp3'),
  attack:new Audio('assets/audio/hero_attack.mp3'),
  hurt:new Audio('assets/audio/hero_hurt.mp3'),
  hallo:new Audio('assets/audio/enemy_hallo.mp3')
 };
-gameAudio.music.loop=true;gameAudio.music.volume=.28;
-gameAudio.attack.volume=.82;gameAudio.hurt.volume=.85;gameAudio.hallo.volume=.76;
+gameAudio.music.loop=true;gameAudio.music.volume=.22;
+// Voces normalizadas y con silencios iniciales recortados: respuesta inmediata al pulsar.
+gameAudio.attack.volume=1;gameAudio.hurt.volume=1;gameAudio.hallo.volume=.96;
 for(const sound of Object.values(gameAudio))sound.preload='auto';
-let nextHalloAt=0;
+// Varias instancias independientes: pulsar A/S/D sucesivamente no silencia el grito.
+const attackVoices=Array.from({length:5},()=>{
+ const voice=gameAudio.attack.cloneNode(true);
+ voice.volume=gameAudio.attack.volume;
+ voice.preload='auto';
+ return voice;
+});
+let attackVoiceIndex=0;
+let halloCooldown=0;
+let halloNearby=false;
 let audioUnlockRequired=false;
+let musicStartPending=false;
 function soundCanPlay(){return gameStarted&&!gamePaused&&!storyPending&&!acquiredNotice&&!ended}
+function reportAudioBlocked(error){
+ if(error&&error.name==='AbortError')return; // play interrumpido por pausa inmediata
+ audioUnlockRequired=true;
+ showAudioUnlock();
+}
+function playVoice(sound){
+ try{
+  sound.currentTime=0;
+  const promise=sound.play();
+  if(promise)promise.catch(reportAudioBlocked);
+ }catch(error){reportAudioBlocked(error)}
+}
 function soundPlay(name){
- if((!soundCanPlay()&&!(name==='hurt'&&gameStarted&&!gamePaused&&!storyPending))||audioUnlockRequired)return;
- const sound=gameAudio[name];if(!sound)return;
- // No acumular voces cuando varios ataques se encadenan.
- if(name==='attack'&&!sound.paused&&sound.currentTime<.35)return;
- try{sound.currentTime=0;const promise=sound.play();if(promise)promise.catch(()=>{audioUnlockRequired=true;showAudioUnlock()})}catch(_){audioUnlockRequired=true;showAudioUnlock()}
+ if(!soundCanPlay()&&!(name==='hurt'&&gameStarted&&!gamePaused&&!storyPending))return;
+ if(audioUnlockRequired)return;
+ if(name==='attack'){
+  // Cada pulsación tiene su propio inicio, aunque otra voz esté sonando.
+  const sound=attackVoices[attackVoiceIndex];
+  attackVoiceIndex=(attackVoiceIndex+1)%attackVoices.length;
+  playVoice(sound);
+  return;
+ }
+ const sound=gameAudio[name];if(sound)playVoice(sound);
 }
 function syncMusic(){
  if(audioUnlockRequired)return;
  if(soundCanPlay()){
-  if(gameAudio.music.paused){const promise=gameAudio.music.play();if(promise)promise.catch(()=>{audioUnlockRequired=true;showAudioUnlock()})}
- }else if(!gameAudio.music.paused)gameAudio.music.pause();
+  if(gameAudio.music.paused&&!musicStartPending){
+   musicStartPending=true;
+   try{
+    const promise=gameAudio.music.play();
+    if(promise)promise.then(()=>{musicStartPending=false},error=>{musicStartPending=false;reportAudioBlocked(error)});
+    else musicStartPending=false;
+   }catch(error){musicStartPending=false;reportAudioBlocked(error)}
+  }
+ }else if(!gameAudio.music.paused){gameAudio.music.pause()}
 }
 function showAudioUnlock(){
  const b=document.getElementById('audioUnlock');
  if(b)b.hidden=!audioUnlockRequired;
 }
 function unlockAudio(){
- // Llamada única al comenzar el nivel, también compatible con A/Enter local.
- // La promesa de play() detecta si Chromium necesita una autorización local.
  audioUnlockRequired=false;
  showAudioUnlock();
  syncMusic();
@@ -349,7 +384,7 @@ function setState(state){
  if(hero.state===state)return;
  hero.state=state;hero.frame=0;hero.elapsed=0;
  if(['punch','kick','sword','motosierra'].includes(state)){
-  attackHits=new Set();soundPlay('attack');
+  attackHits=new Set();
  }
 }
 
@@ -369,6 +404,9 @@ function damageHero(amount,fromX,message){
 }
 
 function action(a){
+ // Un grito por pulsación de ataque, incluso si la animación anterior sigue activa.
+ // Se evita el sonido durante el prólogo, los modales y la pausa.
+ if(a==='punch'||a==='kick'||a==='sword'||(a==='unique'&&['sword','chainsaw'].includes(hero.uniqueSlot)))soundPlay('attack');
  if(acquiredNotice){if(a==='punch')continueAfterItem();return;}
  if(ended)return;
  if(a==='jump'){if(hero.jumpHeight===0&&hero.jumpV===0&&!hero.blocking){hero.jumpV=410;hero.crouch=false}return}
@@ -414,10 +452,19 @@ while(hero.elapsed>=1/heroFPS&&loops++<5){
   if(hero.state==='shield'&&hero.blocking)hero.frame=3;
   else if(hero.state==='death')hero.frame=anims.death[0]-1;
   else if(['idle','walk'].includes(hero.state))hero.frame=0;
-  else if(hero.state==='punch'&&hero.comboQueued){hero.comboQueued=false;hero.combo=hero.comboTime>0?(hero.combo%3)+1:1;hero.comboTime=.85;hero.frame=0;attackHits=new Set();soundPlay('attack')}
+  else if(hero.state==='punch'&&hero.comboQueued){hero.comboQueued=false;hero.combo=hero.comboTime>0?(hero.combo%3)+1:1;hero.comboTime=.85;hero.frame=0;attackHits=new Set()}
   else setState(vx&&!hold.crouch?'walk':'idle');
  }
-}hitTest();for(const d of drops){if(!d.taken&&Math.abs(d.x-hero.x)<34){d.taken=true;if(d.type==='beer'){hero.beers++;announceItem('beer')}else{hero.owned.add(d.type);announceItem(d.type)}renderInventory();if(acquiredNotice){cam=interior?0:Math.max(0,Math.min(WORLD-540,hero.x-190));return;}}}for(const e of enemies){if(e.dead)continue;e.stun=Math.max(0,e.stun-dt);e.inv=Math.max(0,e.inv-dt);e.attack=Math.max(0,e.attack-dt);
+}hitTest();for(const d of drops){if(!d.taken&&Math.abs(d.x-hero.x)<34){d.taken=true;if(d.type==='beer'){hero.beers++;announceItem('beer')}else{hero.owned.add(d.type);announceItem(d.type)}renderInventory();if(acquiredNotice){cam=interior?0:Math.max(0,Math.min(WORLD-540,hero.x-190));return;}}}// Un "Hallo" al comenzar el acercamiento y luego cada 5 s
+// mientras haya enemigos avanzando desde la derecha hacia el héroe.
+const enemiesApproaching=enemies.some(e=>!e.dead&&e.x>hero.x+85&&e.x<hero.x+370&&e.stun<=0);
+if(enemiesApproaching){
+ if(!halloNearby)halloCooldown=0;
+ else halloCooldown=Math.max(0,halloCooldown-dt);
+ if(halloCooldown<=0){soundPlay('hallo');halloCooldown=5;}
+}else halloCooldown=0;
+halloNearby=enemiesApproaching;
+for(const e of enemies){if(e.dead)continue;e.stun=Math.max(0,e.stun-dt);e.inv=Math.max(0,e.inv-dt);e.attack=Math.max(0,e.attack-dt);
 e.animTime=(e.animTime||0)+dt;
 const isHooligan=e.type==='hooligan';
 const animCount=isHooligan?({idle:4,walk:7,punch:5,hit:4}[e.anim]||7):(e.anim==='punch'?8:6);
@@ -436,9 +483,7 @@ while(e.animTime>=1/animFps&&animSteps++<5){
  }
 }
 const dx=hero.x-e.x,dy=hero.y-e.y;
-if(!e.dead&&Math.abs(dx)<370&&Math.abs(dx)>85&&performance.now()>nextHalloAt){
- soundPlay('hallo');nextHalloAt=performance.now()+10000+Math.random()*5500;
-}
+
 e.face=e.type==='boss'?Math.sign(dx)||-1:-1;if(e.stun===0){if(e.role==='melee'){
  if(Math.abs(dx)<350&&Math.abs(dx)>54){if(e.type==='boss')e.x+=Math.sign(dx)*70*dt;else if(dx<0)e.x-=Math.min(-dx-54,(e.type==='chainsaw'?82:55)*dt)}
 }else{
@@ -710,5 +755,5 @@ operatorButton.addEventListener('click',event=>{if(!mouseOverExit)return;
   }
  },250);
 });
-</script><div style="padding:8px 0;color:#f2dfb0;font:12px monospace">L: ESPADA o MOTOSIERRA · F: ESQUIVA o ESCUDO (mantener) · B: CERVEZA (cura 12 corazones) · E: LLAVE frente al castillo. Escudo y motosierra pueden estar equipados simultáneamente.</div><div class="controls" id="new-actions"><button type="button" onclick="action('cerveza')">🍺 Cerveza (B)</button></div><button id="audioUnlock" hidden type="button" onclick="unlockAudio()" style="position:fixed;right:12px;bottom:14px;z-index:99999;background:#f27672;color:#082c22;border:3px solid #ecebd6;padding:12px 18px;font:bold 16px monospace;cursor:pointer">ENABLE SOUND (OPERATOR) / ACTIVAR AUDIO</button>
+</script><div style="padding:8px 0;color:#f2dfb0;font:12px monospace">L: ESPADA o MOTOSIERRA · F: ESQUIVA o ESCUDO (mantener) · B: CERVEZA (cura 12 corazones) · E: LLAVE frente al castillo. Escudo y motosierra pueden estar equipados simultáneamente.</div><div class="controls" id="new-actions"><button type="button" onclick="action('cerveza')">🍺 Cerveza (B)</button></div><button id="audioUnlock" hidden type="button" onclick="unlockAudio()" style="position:fixed;right:12px;bottom:14px;z-index:99999;background:#f27672;color:#082c22;border:3px solid #ecebd6;padding:12px 18px;font:bold 16px monospace;cursor:pointer">AUDIO BLOCKED — OPERATOR ONLY</button>
 </body></html>
