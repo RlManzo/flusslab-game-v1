@@ -38,16 +38,35 @@ button:active{box-shadow:0 0 0 transparent!important;transform:translate(2px,2px
 .intro-pair-status.connected{color:#9ce2ab!important}
 .lang-picker{display:flex;flex-direction:column;gap:8px;align-items:center;width:100%;font:900 12px monospace;color:var(--evil-coral)}
 .lang-picker select{width:100%;padding:10px;background:var(--evil-green);color:var(--evil-light);border:2px solid var(--evil-coral);font:900 16px monospace}
-#pauseOverlay section{background:var(--evil-dark)!important;border:4px solid var(--evil-coral)!important;box-shadow:8px 8px 0 var(--evil-blue)!important}
+#pauseOverlay section{background:rgba(8,44,34,.86)!important;border:4px solid var(--evil-coral)!important;box-shadow:8px 8px 0 var(--evil-blue)!important}
 #pauseOverlay button{background:var(--evil-green)!important;border:2px solid var(--evil-coral)!important}
 #pauseOverlay strong{color:var(--evil-coral);font-size:28px;text-shadow:3px 3px 0 #001d14}
 @media(max-height:760px){.game-logo-title img{max-height:78px}.intro-howto{padding:6px!important}.intro-shell{gap:4px}.intro-pair{padding:6px!important}}
 
-body{background:var(--evil-dark)!important}.panel,.overlay{background:var(--evil-dark)!important;color:var(--evil-light)!important}.panel{border:3px solid var(--evil-coral)!important}.panel h2, header strong{font-family:"Courier New",monospace!important;color:var(--evil-coral)!important;font-weight:900}.system button,.face,.shoulder{border:2px solid var(--evil-coral)!important;background:var(--evil-green)!important;color:var(--evil-light)!important}.foot{color:var(--evil-coral)!important}.lang-picker{margin:12px 0}.panel p{color:var(--evil-light)!important}
+body{background:var(--evil-dark)!important}.panel,.overlay{color:var(--evil-light)!important}.overlay{background:rgba(4,24,18,.48)!important}.panel{background:rgba(8,44,34,.90)!important;border:3px solid var(--evil-coral)!important}.panel h2, header strong{font-family:"Courier New",monospace!important;color:var(--evil-coral)!important;font-weight:900}.system button,.face,.shoulder{border:2px solid var(--evil-coral)!important;background:var(--evil-green)!important;color:var(--evil-light)!important}.foot{color:var(--evil-coral)!important}.lang-picker{margin:12px 0}.panel p{color:var(--evil-light)!important}
+
+/* V21 · larger control targets without changing joystick size or stick sensitivity. */
+.system{flex-basis:52px;height:52px;min-height:52px;gap:6px}
+.system button{height:47px;min-width:94px;max-width:130px;font-size:clamp(13px,3.6vw,18px)}
+.shoulders{gap:6px}
+.shoulder{height:48px;min-width:clamp(76px,24vw,126px);font-size:clamp(19px,5vw,26px)}
+.gamepad{gap:4px;padding:0 2px 5px}
+/* Deliberately do not redefine .stick-area or .stick-ring. */
+.buttons{width:min(51vw,280px);max-width:53%;aspect-ratio:1;flex:0 1 auto}
+.face{width:clamp(58px,16.3vw,94px);height:clamp(58px,16.3vw,94px);font-size:clamp(24px,6.6vw,41px)}
+.face.a{top:34%;left:0}.face.d{top:34%;right:0}
+@media(max-width:390px){.system{flex-basis:47px;height:47px;min-height:47px}.system button{height:43px;min-width:84px;font-size:13px}.shoulder{height:44px;min-width:clamp(68px,23vw,103px)}.buttons{width:51vw;max-width:53%}.face{width:clamp(56px,16vw,68px);height:clamp(56px,16vw,68px);font-size:clamp(24px,6.5vw,32px)}}
+@media(orientation:landscape) and (max-height:500px){.system{flex-basis:37px;height:37px;min-height:37px}.system button{height:34px;min-width:77px}.shoulder{height:34px;min-width:64px;font-size:17px}.buttons{width:min(42vh,230px);max-width:48%}.face{width:clamp(42px,12vh,70px);height:clamp(42px,12vh,70px);font-size:24px}}
+/* Controller-only guide, visually above the START control. */
+#firstStartHint{position:fixed;z-index:8;top:max(57px,calc(env(safe-area-inset-top) + 45px));right:10px;max-width:min(74vw,330px);padding:10px 12px;background:rgba(8,44,34,.92);border:2px solid var(--evil-coral);color:var(--evil-light);font:bold 12px/1.45 "Courier New",monospace;text-align:center;pointer-events:none;box-shadow:3px 3px 0 var(--evil-ink)}
+#firstStartHint::before{content:"";position:absolute;top:-8px;right:34px;width:12px;height:12px;background:var(--evil-coral);transform:rotate(45deg)}
+#firstStartHint[hidden]{display:none!important}
+@keyframes startPulse{0%,100%{box-shadow:3px 3px 0 var(--evil-ink),0 0 0 0 rgba(242,118,114,0)}50%{box-shadow:3px 3px 0 var(--evil-ink),0 0 0 6px rgba(242,118,114,.38)}}
+body.first-start-pending #startBtn{animation:startPulse 1.3s ease-in-out infinite;background:var(--evil-coral)!important;color:var(--evil-dark)!important}
 </style></head><body>
 <header><strong>THE OLD EVIL</strong><span id="status">Sin conexión</span></header>
 <section class="camera" style="flex-basis:0;min-height:0;height:0;border:0;overflow:hidden" aria-hidden="true"><video id="cam" playsinline autoplay muted></video><span id="camMsg"></span><button id="camBtn" class="hide"></button><button id="flipBtn" class="hide"></button></section>
-<div class="system"><button id="selectBtn">SELECT</button><span id="equipSummary">ESPADA · ESQUIVA</span><button id="startBtn">START</button></div>
+<div id="firstStartHint" role="status" aria-live="polite" hidden></div><div class="system"><button id="selectBtn">SELECT</button><span id="equipSummary">ESPADA · ESQUIVA</span><button id="startBtn">START</button></div>
 <div class="shoulders"><button id="useUnique" class="shoulder" data-action="unique">R2</button><button id="useKey" class="shoulder" data-action="interact">L</button><button id="useBeer" class="shoulder" data-action="cerveza">R</button></div><div class="gamepad"><div class="stick-area" id="stick"><div class="stick-ring" id="ring"><div class="stick-knob" id="knob"></div></div><span class="stick-caption">JOYSTICK</span></div><div class="buttons"><button class="face w" data-action="defend">W</button><button class="face a" data-action="punch">A</button><button class="face d" data-action="sword">D</button><button class="face s" data-action="kick">S</button></div></div>
 <div class="foot">THE OLD EVIL · CONTROLLER</div>
 <div id="pauseMenu" class="overlay hide"><div class="panel"><h2>PAUSA</h2><p>Partida detenida</p><button class="wide" type="button" id="pauseContinue">CONTINUAR</button><div class="lang-picker"><label for="phoneLanguage">LANGUAGE</label><select id="phoneLanguage" aria-label="Language"><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option></select></div><button class="wide" type="button" id="pauseRestartPhone" style="margin-top:12px;background:#4d3029">RESTART · NUEVA PARTIDA</button></div></div>
@@ -119,7 +138,16 @@ const $=id=>document.getElementById(id),codeInput=$('code'),status=$('status'),e
 let ws,connected=false,hostState={owned:['sword'],attack:'sword',defense:'dodge',unique:null,started:false,paused:false},cameraStream=null,facing='user';
 function send(kind,action,pressed){if(connected&&ws?.readyState===WebSocket.OPEN)ws.send(JSON.stringify({type:'input',kind,action,pressed}))}
 const names={key:'LLAVE',book:'LIBRO',lantern:'FAROL',beer:'CERVEZA',hedgehog:'ERIZO',shield:'ESCUDO',emblem:'EMBLEMA',chainsaw:'MOTOSIERRA',red:'OBJETO ROJO',sword:'ESPADA'};
-function renderState(){const h=hostState;$('equipSummary').textContent=tr(names[h.attack]||'ESPADA')+' · '+tr(h.defense==='shield'?'ESCUDO':'ESQUIVA');$('useKey').disabled=!h.owned?.includes('key');$('useBeer').disabled=!(h.beers>0);$('useUnique').disabled=!h.unique;$('startBtn').textContent=!h.started?'START':h.paused?'▶ '+tr('SEGUIR'):'Ⅱ '+tr('PAUSA');$('slots').textContent='D: '+tr(names[h.attack]||'ESPADA')+' | W: '+tr(h.defense==='shield'?'ESCUDO':'ESQUIVA')+' | R2: '+tr(names[h.unique]||'VACÍO');$('phoneLanguage').value=currentLanguage;$('pauseMenu').classList.toggle('hide',!h.started||!h.paused||!$('inventory').classList.contains('hide'));}
+function renderState(){const h=hostState;$('equipSummary').textContent=tr(names[h.attack]||'ESPADA')+' · '+tr(h.defense==='shield'?'ESCUDO':'ESQUIVA');$('useKey').disabled=!h.owned?.includes('key');$('useBeer').disabled=!(h.beers>0);$('useUnique').disabled=!h.unique;$('startBtn').textContent=!h.started?'START':h.paused?'▶ '+tr('SEGUIR'):'Ⅱ '+tr('PAUSA');$('slots').textContent='D: '+tr(names[h.attack]||'ESPADA')+' | W: '+tr(h.defense==='shield'?'ESCUDO':'ESQUIVA')+' | R2: '+tr(names[h.unique]||'VACÍO');$('phoneLanguage').value=currentLanguage;$('pauseMenu').classList.toggle('hide',!h.started||!h.paused||!$('inventory').classList.contains('hide'));renderFirstStartHint();}
+// First connection: show a nonblocking tip until the game actually begins.
+function renderFirstStartHint(){
+ const show=connected&&!hostState.started;
+ const hint=$('firstStartHint');if(!hint)return;
+ hint.hidden=!show;document.body.classList.toggle('first-start-pending',show);
+ if(show)hint.textContent=lt('CONTROLLER CONNECTED! PRESS START TO BEGIN.',
+ '¡CONTROL CONECTADO! PRESIONÁ START PARA EMPEZAR.',
+ 'CONTROLLER VERBUNDEN! DRÜCKE START ZUM SPIELEN.');
+}
 let selectedObject=null;
 const refs=['key','book','lantern','beer','hedgehog','shield','emblem','chainsaw','red'];
 function lt(en,es,de){return currentLanguage==='de'?de:currentLanguage==='es'?es:en}
@@ -244,7 +272,7 @@ async function startScan(){
 }
 $('retryScan').onclick=()=>{clearCandidate();lastCandidate='';candidateFrames=0;lastAccepted='';selectedObject=null;clearCandidate();$('slotChoice').classList.add('hide');$('selectionStatus').textContent='';if(cameraStream)$('scanStatus').textContent=tr('Buscando objeto…');else startScan()};
 
-function connect(){if(ws)ws.close();connected=false;err.textContent='';status.textContent=tr('Conectando…');ws=new WebSocket((location.protocol==='https:'?'wss:':'ws:')+'//'+location.host+'/ws');ws.onopen=()=>ws.send(JSON.stringify({type:'join',code:codeInput.value.trim()}));ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch{return}if(m.type==='joined'){connected=true;$('join').classList.add('hide');status.textContent=tr('● Conectado');renderState()}if(m.type==='host_state'){hostState={...hostState,...m};if(m.language&&m.language!==currentLanguage)setLanguage(m.language);renderState()}if(m.type==='error'){err.textContent=m.message;status.textContent=tr('Desconectado');connected=false;$('join').classList.remove('hide')}};ws.onclose=()=>{connected=false;status.textContent=tr('Desconectado');$('join').classList.remove('hide');err.textContent=tr('Conexión perdida. Volvé a conectar.')}}
+function connect(){if(ws)ws.close();connected=false;err.textContent='';status.textContent=tr('Conectando…');ws=new WebSocket((location.protocol==='https:'?'wss:':'ws:')+'//'+location.host+'/ws');ws.onopen=()=>ws.send(JSON.stringify({type:'join',code:codeInput.value.trim()}));ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch{return}if(m.type==='joined'){connected=true;$('join').classList.add('hide');status.textContent=tr('● Conectado');renderState()}if(m.type==='host_state'){hostState={...hostState,...m};if(m.language&&m.language!==currentLanguage)setLanguage(m.language);renderState()}if(m.type==='error'){err.textContent=m.message;status.textContent=tr('Desconectado');connected=false;renderFirstStartHint();$('join').classList.remove('hide')}};ws.onclose=()=>{connected=false;renderFirstStartHint();status.textContent=tr('Desconectado');$('join').classList.remove('hide');err.textContent=tr('Conexión perdida. Volvé a conectar.')}}
 $('connect').onclick=connect;if(codeInput.value)connect();
 $('phoneLanguage').addEventListener('change',e=>{const lang=e.target.value;setLanguage(lang);sendLanguage(lang)});function sendLanguage(lang){if(connected&&ws?.readyState===WebSocket.OPEN)ws.send(JSON.stringify({type:'input',kind:'press',action:'language',value:lang}))}
 $('pauseContinue').onclick=()=>send('press','start');$('pauseRestartPhone').onclick=()=>{releaseStick();send('press','restart')};$('startBtn').onclick=()=>send('press','start');$('selectBtn').onclick=()=>{$('inventory').classList.remove('hide');renderState();releaseStick();sendModal(true);startScan()};$('closeInventory').onclick=async()=>{await stopScan();$('inventory').classList.add('hide');sendModal(false);renderState()};

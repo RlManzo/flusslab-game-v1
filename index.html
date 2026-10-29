@@ -54,11 +54,20 @@ button:active{box-shadow:0 0 0 transparent!important;transform:translate(2px,2px
 .intro-pair-status.connected{color:#9ce2ab!important}
 .lang-picker{display:flex;flex-direction:column;gap:8px;align-items:center;width:100%;font:900 12px monospace;color:var(--evil-coral)}
 .lang-picker select{width:100%;padding:10px;background:var(--evil-green);color:var(--evil-light);border:2px solid var(--evil-coral);font:900 16px monospace}
-#pauseOverlay section{background:var(--evil-dark)!important;border:4px solid var(--evil-coral)!important;box-shadow:8px 8px 0 var(--evil-blue)!important}
+#pauseOverlay section{background:rgba(8,44,34,.86)!important;border:4px solid var(--evil-coral)!important;box-shadow:8px 8px 0 var(--evil-blue)!important}
 #pauseOverlay button{background:var(--evil-green)!important;border:2px solid var(--evil-coral)!important}
 #pauseOverlay strong{color:var(--evil-coral);font-size:28px;text-shadow:3px 3px 0 #001d14}
 @media(max-height:760px){.game-logo-title img{height:clamp(126px,22vh,172px)}.intro-howto{padding:6px!important}.intro-shell{gap:4px}.intro-pair{padding:6px!important}}
-</style></head><body><div id="startScreen" class="coswig-intro" role="region" aria-label="Pantalla de inicio de The Old Evil">
+
+/* V22: prologo ilustrado, independiente del gameplay y del QR. */
+#storyPrologue{position:fixed;inset:0;z-index:110;display:none;align-items:center;justify-content:center;background:#061a15;overflow:hidden}
+#storyPrologue.is-active{display:flex}
+#storyPrologue .story-page{position:relative;height:100%;max-height:100dvh;width:min(100vw,56.28dvh);max-width:100vw;background:#082c22}
+#storyPrologue .story-art{width:100%;height:100%;display:block;object-fit:contain;image-rendering:pixelated}
+#storyPrologue .story-continue{position:absolute;bottom:clamp(6px,1.8vh,18px);left:50%;transform:translateX(-50%);padding:9px 12px;background:rgba(8,44,34,.88);color:#ecebd6;border:2px solid #f27672;box-shadow:3px 3px 0 #163c77;font:bold clamp(11px,1.5vh,16px)/1.2 monospace;letter-spacing:.06em;text-align:center;white-space:nowrap;animation:storyPulse 1.4s steps(2,end) infinite;pointer-events:none}
+@keyframes storyPulse{50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){#storyPrologue .story-continue{animation:none}}
+</style></head><body><div id="storyPrologue" role="dialog" aria-modal="true" aria-label="The Old Evil — Prologue" aria-hidden="true"><div class="story-page"><img class="story-art" src="assets/the_old_evil_prologue.png" alt="A mysterious maiden appears to the hero by the Elbe River, asking him to confront an ancient evil."/><div class="story-continue" id="storyContinue">PRESS A TO BEGIN</div></div></div><div id="startScreen" class="coswig-intro" role="region" aria-label="Pantalla de inicio de The Old Evil">
   <div class="intro-shell">
     <header class="intro-heading">
       <span class="intro-eyebrow">FLUSSLAB · INTERACTIVE EXPERIENCE</span>
@@ -242,21 +251,24 @@ function drawWrapped(text,x,y,maxWidth,lineHeight,font='bold 15px monospace'){
 function drawAcquired(){
  if(!acquiredNotice)return;
  const guide=(ITEM_GUIDE[acquiredNotice.id]||ITEM_GUIDE.red)[currentLanguage]||ITEM_GUIDE.red.en;
- c.save();c.fillStyle='rgba(3,20,14,.91)';c.fillRect(0,84,540,876);
- c.fillStyle='#082c22';c.fillRect(24,180,492,600);
- c.strokeStyle='#f27672';c.lineWidth=6;c.strokeRect(27,183,486,594);
- c.fillStyle='#ecebd6';c.textAlign='center';c.font='bold 26px monospace';
- c.fillText(({en:'ITEM FOUND!',es:'¡OBJETO ENCONTRADO!',de:'OBJEKT GEFUNDEN!'})[currentLanguage],270,230);
- drawItemArt(acquiredNotice.id,170,250,200,170);
- c.fillStyle='#f27672';c.font='bold 31px monospace';c.fillText(guide[0],270,457);
- c.fillStyle='#ecebd6';c.font='bold 20px monospace';c.fillText(guide[1],270,502);
- c.font='bold 15px monospace';let y=drawWrapped(guide[2],270,550,414,22);
- c.fillStyle='#d6e7cb';drawWrapped(guide[3],270,y+6,414,22,'14px monospace');
- c.fillStyle='#f27672';c.fillRect(78,699,384,51);
- c.fillStyle='#082c22';c.font='bold 20px monospace';
- c.fillText(({en:'PRESS A TO CONTINUE',es:'PRESIONÁ A PARA SEGUIR',de:'DRÜCKE A ZUM WEITER'})[currentLanguage],270,730);
+ c.save();
+ // Un velo leve mantiene visible el nivel; la ficha no ocupa toda la pantalla.
+ c.fillStyle='rgba(4,25,18,.17)';c.fillRect(0,84,540,876);
+ c.fillStyle='rgba(8,44,34,.66)';c.fillRect(53,260,434,438);
+ c.strokeStyle='rgba(242,118,114,.9)';c.lineWidth=3;c.strokeRect(54.5,261.5,431,435);
+ c.fillStyle='#ecebd6';c.textAlign='center';c.font='bold 23px monospace';
+ c.fillText(({en:'ITEM FOUND!',es:'¡OBJETO ENCONTRADO!',de:'OBJEKT GEFUNDEN!'})[currentLanguage],270,301);
+ drawItemArt(acquiredNotice.id,205,307,130,116);
+ c.fillStyle='#f27672';c.font='bold 27px monospace';c.fillText(guide[0],270,452);
+ c.fillStyle='#ecebd6';c.font='bold 19px monospace';c.fillText(guide[1],270,485);
+ c.font='bold 14px monospace';let y=drawWrapped(guide[2],270,521,382,19);
+ c.fillStyle='#d6e7cb';drawWrapped(guide[3],270,y+7,382,19,'13px monospace');
+ c.fillStyle='rgba(242,118,114,.94)';c.fillRect(102,636,336,43);
+ c.fillStyle='#082c22';c.font='bold 17px monospace';
+ c.fillText(({en:'PRESS A TO CONTINUE',es:'PRESIONÁ A PARA SEGUIR',de:'DRÜCKE A ZUM WEITER'})[currentLanguage],270,664);
  c.restore();
 }
+
 const guardFrames=Array.from({length:4},(_,i)=>{const im=new Image();im.src=`sprites/shield_guard_${String(i+1).padStart(2,'0')}.png`;return im});const itemNames={sword:'Espada',shield:'Escudo',key:'Llave',chainsaw:'Motosierra'};const inventoryEl=document.querySelector('#inventory');const specialNames={book:'Libro',lantern:'Farol',hedgehog:'Erizo',emblem:'Emblema',red:'Objeto rojo'};
 function say(t,time=3){/* V12: sin mensajes de combate ni textos de ayuda sobre el juego. */}
 function spawn(x,type='basic',y=GROUND){if(type==='basic'){normalEnemyCounter++;if(normalEnemyCounter%3===0)type='hooligan'}let hp=type==='boss'?34:type==='chainsaw'?17:type==='heavy'?7:3;return {id:++enemyCounter,x,y,hp,max:hp,type,stun:0,inv:0,attack:0,face:-1,dead:false,drop:null,triggered:false,shot:1.5+Math.random()*1.2,throwPending:null,anim:'walk',animFrame:0,animTime:0,attackWindup:0,role:type==='hooligan'?'knife':'melee'}}
@@ -344,7 +356,7 @@ function interact(){if(!interior&&hero.x>6860){if(!hero.owned.has('key')){say('N
 window.addEventListener('keydown',e=>{if(acquiredNotice){if(!e.repeat&&(e.code==='KeyJ'||e.code==='Enter'))continueAfterItem();e.preventDefault();return;}if(e.code.startsWith('Digit')){const n=Number(e.code.slice(-1));if(n>=1&&n<=4&&!e.repeat)toggleEquip(['sword','shield','key','chainsaw'][n-1]);return}const a=keyMap[e.code];if(!a)return;e.preventDefault();if(!keys.has(e.code)){if(a==='defend')action('defend');else if(a in hold)hold[a]=true;else action(a)}keys.add(e.code)});window.addEventListener('keyup',e=>{const a=keyMap[e.code];keys.delete(e.code);if(a==='defend')hold.block=[...keys].some(k=>keyMap[k]==='defend');else if(a in hold)hold[a]=[...keys].some(k=>keyMap[k]===a)});window.addEventListener('blur',()=>{keys.clear();for(const k in hold)hold[k]=false});
 for(const id of ['left','right','up','down','punch','kick','sword','dodge','interact']){const b=document.getElementById(id);b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);if(id==='up')action('jump');else if(id==='down')hold.crouch=true;else if(id==='dodge')action('defend');else if(id in hold)hold[id]=true;else action(id)});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>{if(id==='down')hold.crouch=false;else if(id==='dodge')hold.block=false;else if(id in hold)hold[id]=false})}document.querySelector('#restart').onclick=()=>restartGame();
 function hitTest(){const state=hero.state;if(!['punch','kick','sword','motosierra'].includes(state))return;const active=state==='motosierra'?[2,3,4,5,6]:state==='punch'?[2,3,4,5,6]:state==='kick'?[3,4,5]:[2,3,4,5,6];if(!active.includes(hero.frame))return;const chain=hero.attackSlot==='chainsaw';const reach=state==='punch'?88:state==='kick'?112:state==='motosierra'?155:chain?135:145;const dmg=state==='punch'?(hero.combo===3?3:1):state==='kick'?2:state==='motosierra'?6:chain?5:3;for(const e of enemies){if(e.dead||attackHits.has(e.id)||e.inv>0)continue;const dx=e.x-hero.x;if(dx*hero.face>4&&dx*hero.face<reach&&Math.abs(e.y-hero.y)<44){e.hp-=dmg;e.stun=e.type==='boss'?.17:.35;e.inv=.20;if(e.type==='hooligan'){e.anim='hit';e.animFrame=0;e.animTime=0;e.throwPending=null}e.x+=hero.face*(e.type==='boss'?7:22);attackHits.add(e.id);if(e.hp<=0){e.dead=true;if(e.drop){drops.push({x:e.x,y:e.y,type:e.drop,taken:false});if(e.extraDrop)drops.push({x:e.x+24,y:e.y,type:e.extraDrop,taken:false});say(`¡Objeto encontrado: ${e.drop==='beer'?'CERVEZA':itemNames[e.drop]}! Pasá por encima para recogerlo.`,4)}if(e.type==='boss'){ended=true;say('¡JEFE DERROTADO! NIVEL 1 COMPLETADO.',999)}else say('¡Enemigo derrotado!')}else say(`Impacto ${dmg} · ${e.type==='boss'?'JEFE':e.type==='chainsaw'?'MOTOSIERRA':'ENEMIGO'} ${Math.max(0,e.hp)}/${e.max}`,1.1)}}}
-function update(dt){if(!gameStarted||gamePaused||acquiredNotice||(ended&&hero.state!=='death'))return;if(hero.state==='death'){hero.elapsed+=dt;while(hero.elapsed>=1/11&&hero.frame<anims.death[0]-1){hero.elapsed-=1/11;hero.frame++}return;}hero.inv=Math.max(0,hero.inv-dt);
+function update(dt){if(!gameStarted||gamePaused||storyPending||acquiredNotice||(ended&&hero.state!=='death'))return;if(hero.state==='death'){hero.elapsed+=dt;while(hero.elapsed>=1/11&&hero.frame<anims.death[0]-1){hero.elapsed-=1/11;hero.frame++}return;}hero.inv=Math.max(0,hero.inv-dt);
  // V16: el impacto interrumpe el ataque, pero no inmoviliza el stick.
  // Recuperación de seguridad si el navegador pierde tiempo de animación.
  if(hero.state==='hit'){hero.hitTime+=dt;if(hero.hitTime>.85)setState((hold.left||hold.right)?'walk':'idle')}else hero.hitTime=0;
@@ -451,7 +463,7 @@ function loop(t){
  last=t;
  nextFrame=t+targetFrameMS-1;
  // Evitar render constante mientras el mando aún no inició o SELECT pausa el juego.
- if(!gameStarted || gamePaused){return;}
+ if(!gameStarted || gamePaused || storyPending){return;}
  update(dt);draw();
 }
 reset();requestAnimationFrame(loop);
@@ -459,6 +471,26 @@ reset();requestAnimationFrame(loop);
 // Control remoto desde el celular: WebSocket a través del servidor local.
 // Las pulsaciones sostenidas se sincronizan como estados; las acciones son eventos.
 let gameStarted=false,gamePaused=false;
+let storyPending=false,storyShown=false;
+const storyEl=document.getElementById('storyPrologue');
+function showStoryPrologue(){
+ storyShown=true;storyPending=true;
+ storyEl.classList.add('is-active');storyEl.setAttribute('aria-hidden','false');
+ clearRemoteHold();keys.clear();for(const k in hold)hold[k]=false;
+ sendPhoneState();
+}
+function continueStoryPrologue(){
+ if(!storyPending)return;
+ storyPending=false;storyEl.classList.remove('is-active');storyEl.setAttribute('aria-hidden','true');
+ last=performance.now();nextFrame=0;
+ clearRemoteHold();sendPhoneState();
+}
+window.addEventListener('keydown',e=>{
+ if(storyPending&&(e.code==='KeyJ'||e.code==='Enter'||e.code==='Space')){
+  e.preventDefault();if(!e.repeat)continueStoryPrologue();
+ }
+},true);
+
 const startEl=document.getElementById('startScreen');
 const statusEl=document.getElementById('pairStatus');
 
@@ -511,11 +543,11 @@ updateRecommendedWifi(new URLSearchParams(location.search).get('wifi'));
 
 function sendPhoneState(){
  if(remoteSocket?.readyState!==WebSocket.OPEN||!phoneConnected)return;
- remoteSocket.send(JSON.stringify({type:'host_state',started:gameStarted,paused:gamePaused,attack:hero.attackSlot,defense:hero.defenseSlot,unique:hero.uniqueSlot,owned:[...hero.owned],beers:hero.beers,hp:hero.hp,itemNotice:!!acquiredNotice,language:currentLanguage}));
+ remoteSocket.send(JSON.stringify({type:'host_state',started:gameStarted,paused:gamePaused,attack:hero.attackSlot,defense:hero.defenseSlot,unique:hero.uniqueSlot,owned:[...hero.owned],beers:hero.beers,hp:hero.hp,itemNotice:!!acquiredNotice,storyPending,language:currentLanguage}));
 }
 function phoneStart(){
  if(!phoneConnected||acquiredNotice)return;
- if(!gameStarted){gameStarted=true;gamePaused=false;startEl.style.display='none';last=performance.now()}
+ if(!gameStarted){gameStarted=true;gamePaused=false;startEl.style.display='none';last=performance.now();if(!storyShown)showStoryPrologue()}
  else if(ended){reset();gamePaused=false}
  else gamePaused=!gamePaused;
  sendPhoneState();
@@ -551,6 +583,7 @@ function connectRemote(){
   }
   if(msg.type==='input'&&phoneConnected){
     const a=msg.action;
+    if(storyPending){if(msg.kind==='press'&&a==='punch')continueStoryPrologue();return;}
     if(acquiredNotice){if(msg.kind==='press'&&a==='punch')continueAfterItem();return;}
     if(msg.kind==='hold'&&a==='block'){remoteHold.block=!!msg.pressed;syncRemoteHold();}else if(msg.kind==='hold'&&Object.prototype.hasOwnProperty.call(remoteHold,a)){
       remoteHold[a]=!!msg.pressed;
@@ -580,21 +613,21 @@ connectRemote();
 // RESTART conserva la vinculación con el celular y vuelve al nivel 1.
 function restartGame(){
  clearRemoteHold();keys.clear();for(const key in hold)hold[key]=false;
- reset();gameStarted=true;gamePaused=false;startEl.style.display='none';
+ reset();gameStarted=true;gamePaused=false;storyPending=false;storyEl.classList.remove('is-active');storyEl.setAttribute('aria-hidden','true');startEl.style.display='none';
  last=performance.now();nextFrame=0;
  pauseEl.style.display='none';sendPhoneState();
 }
 // Menú de pausa visible en pantalla, con restart también accesible en el celular.
 const pauseEl=document.createElement('div');pauseEl.id='pauseOverlay';
-pauseEl.style.cssText='display:none;position:fixed;inset:0;z-index:88;background:rgba(4,18,14,.88);color:#ffe6aa;align-items:center;justify-content:center;text-align:center;font:bold 24px monospace;padding:30px';
-pauseEl.innerHTML='<section style="border:2px solid #bea776;background:#112d24;padding:30px;max-width:430px;width:100%;display:flex;flex-direction:column;align-items:center;gap:20px"><strong id="pauseHeading">PAUSED</strong><button id="pauseResume" type="button" style="font:bold 18px monospace;background:#274a37;color:#ffe6aa;border:2px solid #bea776;padding:13px 20px;width:100%;cursor:pointer">RESUME</button><button id="pauseRestart" type="button" style="font:bold 18px monospace;background:#46302a;color:#ffe6aa;border:2px solid #bea776;padding:13px 20px;width:100%;cursor:pointer">RESTART</button><label class="lang-picker">LANGUAGE / IDIOMA / SPRACHE<select id="hostLanguage" aria-label="Language"><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option></select></label><small style="font:13px monospace">START to resume · RESTART begins again</small></section>';
+pauseEl.style.cssText='display:none;position:fixed;inset:0;z-index:88;background:rgba(4,18,14,.46);color:#ffe6aa;align-items:center;justify-content:center;text-align:center;font:bold 24px monospace;padding:30px';
+pauseEl.innerHTML='<section style="border:2px solid #bea776;background:rgba(8,44,34,.86);padding:22px;max-width:395px;width:100%;display:flex;flex-direction:column;align-items:center;gap:12px"><strong id="pauseHeading">PAUSED</strong><button id="pauseResume" type="button" style="font:bold 18px monospace;background:#274a37;color:#ffe6aa;border:2px solid #bea776;padding:13px 20px;width:100%;cursor:pointer">RESUME</button><button id="pauseRestart" type="button" style="font:bold 18px monospace;background:#46302a;color:#ffe6aa;border:2px solid #bea776;padding:13px 20px;width:100%;cursor:pointer">RESTART</button><label class="lang-picker">LANGUAGE / IDIOMA / SPRACHE<select id="hostLanguage" aria-label="Language"><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option></select></label><small style="font:13px monospace">START to resume · RESTART begins again</small></section>';
 document.body.appendChild(pauseEl);
 document.getElementById('pauseRestart').addEventListener('click',restartGame);
 function renderPauseLanguage(){const select=document.getElementById('hostLanguage');if(select)select.value=currentLanguage;}
 document.getElementById('hostLanguage').addEventListener('change',e=>setLanguage(e.target.value));
 document.getElementById('pauseResume').addEventListener('click',()=>{gamePaused=false;last=performance.now();sendPhoneState()});
 setLanguage('en');
-setInterval(()=>{pauseEl.style.display=gameStarted&&gamePaused?'flex':'none';sendPhoneState()},850);
+setInterval(()=>{pauseEl.style.display=gameStarted&&gamePaused&&!storyPending?'flex':'none';sendPhoneState()},850);
 // Salida reservada al operador con mouse: invisible para touch y el mando.
 // Nota: window.close() solo funciona si la ventana fue abierta por script o
 // si Chromium admite cierre desde una ventana tipo app/kiosco configurada para ello.
