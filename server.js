@@ -65,7 +65,7 @@ wss.on('connection',ws=>{
    try{
     const url=sessionOrigin(ws.upgradeRequest||{} )+'/controller?code='+room.code;
     const qr=await QRCode.toDataURL(url,{width:220,margin:1,errorCorrectionLevel:'M'});
-    send(ws,{type:'session',code:room.code,url,qr});notify(room);
+    send(ws,{type:'session',code:room.code,url,qr,wifiSsid:process.env.COSWIG_WIFI_SSID||''});notify(room);
    }catch(err){console.error('QR:',err.message);send(ws,{type:'error',message:'No se pudo generar el QR.'})}
    return;
   }

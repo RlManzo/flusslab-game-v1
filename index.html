@@ -7,7 +7,85 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#000;oversc
 .wrap>h1,.wrap>p,.wrap>strong,.wrap>.controls,.wrap>#inventory,.wrap>label,body>.controls,body>.game-actions,body>.new-actions,body>div.new-actions{display:none!important}
 /* Mantener campos/botones de desarrollo en el DOM porque la lógica aún los consulta. */
 #startScreen{max-height:100dvh}
-</style></head><body><div id="startScreen" style="position:fixed;inset:0;background:rgba(4,18,14,.97);z-index:99;display:flex;align-items:center;justify-content:center;overflow:auto;padding:16px"><section style="width:min(94vw,500px);text-align:center;border:2px solid #c4a36b;background:#102a23;padding:22px;color:#f9e4b7"><h1 style="font:32px Georgia">COSWIG</h1><h2 style="font:19px monospace">LOS DOCE APÓSTOLES</h2><p>Conectá tu celular como control antes de comenzar.</p><img id="pairQR" alt="Código QR para vincular celular" style="width:190px;height:190px;background:#fff;padding:9px;display:none;margin:12px auto"><p id="pairStatus">Conectando con el servidor local…</p><p style="font:12px monospace">Escaneá el QR con tu celular y presioná START para comenzar.</p></section></div><main class="wrap"><h1>COSWIG / NIVEL 1 — COMBATE HORIZONTAL</h1><p>Avanzá a izquierda y derecha. Agachate para esquivar los cuchillos del hooligan. Elegí una acción de ataque (espada o motosierra) y una de defensa (esquiva o escudo). La cerveza y la llave se usan aparte.</p><div class="game"><canvas id="game" width="540" height="960"></canvas></div><div class="controls"><button id="left">◀ A</button><button id="right">D ▶</button><button id="up">▲ W</button><button id="down">▼ S</button><button id="punch">👊 J Puño</button><button id="kick">🦶 K Patada</button><button id="sword">⚔ L Ataque</button><button id="dodge">↶ F Defensa</button><button id="interact">E Usar llave</button><button id="restart">Reiniciar</button></div><strong>Inventario — seleccioná objetos para equiparlos (máximo 2)</strong><div id="inventory"></div><label><input id="hitboxes" type="checkbox"> Ver colisiones</label><p><small>WASD: mover, saltar o agacharse · J: puños · K: patada · L: ataque equipado (espada/motosierra) · F: defensa equipada (esquiva/escudo) · B: beber cerveza · E: usar llave frente al castillo · 1–4: seleccionar equipo. Un ataque y una defensa.</small></p></main><script>
+
+/* V18 — pantalla de inicio / tutorial animado. Todo permanece dentro del overlay. */
+.coswig-intro{position:fixed;inset:0;z-index:99;display:flex;align-items:center;justify-content:center;overflow-y:auto;overscroll-behavior:contain;padding:12px;background:radial-gradient(ellipse at 50% 18%,#224636 0,#091c18 60%,#04100e 100%);color:#f6e5c0;font-family:monospace}
+.intro-shell{width:min(94vw,520px);max-height:100%;margin:auto;display:flex;flex-direction:column;align-items:center;gap:clamp(5px,1.1vh,13px);text-align:center}
+.intro-heading h1{font-family:Georgia,serif;font-size:clamp(40px,6.3vh,70px);letter-spacing:.13em;line-height:.96;margin:4px 0;text-shadow:0 3px 0 #655638,0 0 28px #afad6380;color:#ffe3a3}
+.intro-heading h2{font-size:clamp(12px,1.8vh,19px);letter-spacing:.17em;color:#d7b67c;margin:3px 0 8px}
+.intro-heading p{font-size:clamp(10px,1.3vh,13px);margin:0;color:#c1d4bf}
+.intro-eyebrow,.intro-topline,.intro-pair-label{color:#ead39a;font-size:clamp(10px,1.3vh,13px);letter-spacing:.12em}
+.intro-howto{width:100%;border:1px solid #927e52;background:#10241fdb;padding:clamp(8px,1.3vh,14px);box-shadow:0 4px 25px #0007}
+.intro-topline{display:flex;justify-content:space-between;border-bottom:1px solid #58634b;padding-bottom:5px;font-weight:bold}
+.intro-visual{height:clamp(100px,17vh,192px);position:relative;overflow:hidden;background:linear-gradient(160deg,#1b3932,#314d3a 60%,#17332c);margin:7px 0;border:1px solid #4a6955}
+.intro-visual:after{content:"";position:absolute;bottom:10%;left:0;right:0;border-bottom:3px solid #77927444}
+.intro-slide{display:none;position:absolute;inset:0;align-items:center;justify-content:center;gap:35px;animation:introSlideEnter .32s ease both}.intro-slide.active{display:flex}
+@keyframes introSlideEnter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.tutorial-phone{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;width:65px;height:110px;border:5px solid #111b19;border-radius:13px;background:#223e34;box-shadow:4px 5px 0 #091b16,0 0 0 2px #a3a989;color:#ffecbb}
+.phone-notch{position:absolute;top:3px;width:19px;height:4px;border-radius:10px;background:#0c1614}.phone-label{font-size:10px;margin-top:6px}
+.wifi-router{position:relative;width:90px;height:41px;background:#25332d;border:3px solid #b4bd94;border-radius:7px;display:flex;align-items:center;justify-content:center;transform:translateY(23px)}.router-name{font-size:9px}.router-led{position:absolute;bottom:5px;right:7px;background:#82edab;width:5px;height:5px;border-radius:100%;animation:ledFlash 1s infinite}
+.wifi-wave{position:absolute;border:3px solid #9fe3b6;border-bottom:0;border-radius:100px 100px 0 0;left:50%;transform:translateX(-50%);opacity:0;animation:wifiPulse 2.4s infinite}.wave-1{bottom:46px;width:25px;height:15px}.wave-2{bottom:50px;width:53px;height:29px;animation-delay:.5s}.wave-3{bottom:55px;width:80px;height:44px;animation-delay:1s}
+@keyframes wifiPulse{0%,100%{opacity:0}35%,75%{opacity:1}}@keyframes ledFlash{50%{opacity:.3}}
+.wifi-phone-signal{font-size:29px;color:#a8eab9;animation:ledFlash 1.7s infinite}.phone-check{position:absolute;right:-11px;top:17px;background:#4c8c5c;border:1px solid #d6e6b7;padding:2px 5px}
+.qr-illustration{background:#f1eddf;color:#122a23;width:94px;height:94px;display:grid;place-items:center;position:relative}.qr-pixels{font:bold 73px monospace}.qr-marker{position:absolute;width:17px;height:17px;background:#11271f;border:4px solid #fff;outline:3px solid #11271f}.qr-a{top:9px;left:9px}.qr-b{top:9px;right:9px}.qr-c{bottom:9px;left:9px}.scan-outline{position:absolute;width:110px;height:110px;left:calc(50% - 95px);border:2px solid #d6df9c99}.scan-line{position:absolute;left:0;right:0;height:3px;top:0;background:#b6e99c;box-shadow:0 0 10px #9fea83;animation:scanMove 2.2s infinite alternate}@keyframes scanMove{to{top:calc(100% - 3px)}}.scan-phone{transform:rotate(-9deg)}.phone-camera{font-size:35px}
+.controller-phone{width:145px;height:112px;transform:rotate(-5deg);border-radius:11px}.pad-header{font-size:13px;position:absolute;top:9px}.pad-header small{display:block;font-size:7px}.pad-stick{position:absolute;left:19px;bottom:16px;width:42px;height:42px;background:#0c221b;border-radius:50%;border:2px solid #b1bd9d}.pad-stick span{display:block;width:19px;height:19px;border-radius:50%;background:#a5aa96;transform:translate(10px,9px);animation:stickMove 2s infinite alternate}@keyframes stickMove{to{transform:translate(17px,3px)}}.pad-buttons{position:absolute;right:12px;bottom:17px;display:grid;grid-template-columns:repeat(2,20px);gap:4px}.pad-buttons b{border:1px solid #e1cd91;border-radius:100%;height:20px;line-height:19px;font-size:10px;background:#39614a}.pad-select{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);font-size:8px;color:#f9e1ae}.pad-arrows{font-size:25px;color:#ebd99f;animation:arrowsMove 1.4s infinite alternate}@keyframes arrowsMove{to{transform:translateX(16px)}}
+.mini-art{height:97px;width:94px;background:#b8a27d;border:7px solid #5b3924;position:relative;display:grid;place-items:center;box-shadow:2px 4px 0 #14231b}.mini-art img{width:70%;height:75%;object-fit:contain;image-rendering:pixelated}.art-scan{position:absolute;inset:0;border:3px solid #a9f1b3;animation:artScan 2s infinite}.art-scan:before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:#c5ffad;animation:scanMove 2s infinite alternate}@keyframes artScan{50%{box-shadow:0 0 15px #a6f4b3}}.item-transfer{font-size:29px;animation:arrowsMove 1.4s infinite alternate}.items-phone{width:113px;height:110px}.items-caption{font-size:9px;margin-bottom:12px}.items-slots{display:flex;gap:3px}.items-slots img,.items-slots span{width:31px;height:31px;object-fit:contain;border:1px solid #d6bd86;background:#17362c;padding:2px;image-rendering:pixelated}.items-slots span{line-height:25px}
+.intro-step-title{font-weight:bold;color:#ffda8b;font-size:clamp(12px,1.6vh,16px);margin-bottom:4px}.intro-copy{min-height:clamp(62px,7.5vh,88px)}.intro-copy p{margin:0;font-size:clamp(11px,1.45vh,14px);line-height:1.4;color:#e2e5cc}.intro-copy .intro-wifi-name{margin:5px 0 0;color:#a5efb7;font-weight:bold}
+.intro-navigation{display:flex;justify-content:center;align-items:center;gap:12px;margin-top:3px}.intro-dot,.intro-play-toggle{width:30px;height:30px;min-width:30px;padding:0;border:1px solid #928563;border-radius:3px;background:#19352c;color:#e9dbb9;cursor:pointer;font:bold 13px monospace}.intro-dot.active{background:#cfad64;color:#17291f;border-color:#f4d68e}.intro-play-toggle{margin-left:9px;font-size:15px}.intro-pair{display:flex;flex-direction:column;align-items:center;gap:clamp(5px,1vh,9px);width:100%}.intro-qr-frame{width:clamp(115px,18vh,185px);height:clamp(115px,18vh,185px);display:grid;place-items:center;background:white;padding:8px;border:3px solid #dfc38f;box-shadow:0 0 0 5px #173328}.intro-qr-frame img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated}.intro-pair-status{margin:1px 0;color:#eddfb8;font-size:clamp(11px,1.45vh,14px);line-height:1.3}.intro-pair-status.connected{color:#a2f2ba}.intro-start-tip{font-size:clamp(10px,1.3vh,13px);line-height:1.35;color:#b9cbb8}.intro-start-tip strong{color:#ffdf9b}
+@media (max-height:760px){.coswig-intro{padding:7px}.intro-shell{gap:5px}.intro-heading h1{font-size:39px}.intro-heading h2{font-size:12px}.intro-visual{height:115px}.intro-copy{min-height:60px}.intro-qr-frame{width:114px;height:114px}.intro-heading p{font-size:10px}}
+@media (prefers-reduced-motion:reduce){.coswig-intro *{animation-duration:.01ms!important;animation-iteration-count:1!important}}
+</style></head><body><div id="startScreen" class="coswig-intro" role="region" aria-label="Pantalla de inicio de Coswig">
+  <div class="intro-shell">
+    <header class="intro-heading">
+      <span class="intro-eyebrow">FLUSSLAB · EXPERIENCIA INTERACTIVA</span>
+      <h1>COSWIG</h1>
+      <h2>LOS DOCE APÓSTOLES</h2>
+      <p>Conectá tu celular. Explorá el mundo. Descubrí objetos en la pintura.</p>
+    </header>
+    <section class="intro-howto" aria-label="Tutorial interactivo">
+      <div class="intro-topline"><span>GUÍA PARA JUGAR</span><span id="introStepCount">01 / 04</span></div>
+      <div class="intro-visual" id="introVisual" aria-hidden="true">
+        <div class="intro-slide intro-slide-wifi active" data-illustration="0">
+          <div class="wifi-router"><span class="router-led"></span><span class="router-name">COSWIG WIFI</span><div class="wifi-wave wave-1"></div><div class="wifi-wave wave-2"></div><div class="wifi-wave wave-3"></div></div>
+          <div class="tutorial-phone wifi-phone"><span class="phone-notch"></span><span class="wifi-phone-signal">◉</span><span class="phone-label">Wi-Fi</span><span class="phone-check">✓</span></div>
+          <div class="intro-connection"></div>
+        </div>
+        <div class="intro-slide intro-slide-qr" data-illustration="1">
+          <div class="qr-illustration"><span class="qr-pixels">▦</span><span class="qr-marker qr-a"></span><span class="qr-marker qr-b"></span><span class="qr-marker qr-c"></span></div>
+          <div class="scan-outline"><span class="scan-line"></span></div>
+          <div class="tutorial-phone scan-phone"><span class="phone-notch"></span><span class="phone-camera">▣</span><span class="phone-label">CÁMARA</span></div>
+        </div>
+        <div class="intro-slide intro-slide-pad" data-illustration="2">
+          <div class="tutorial-phone controller-phone"><span class="phone-notch"></span><span class="pad-header">COSWIG <small>CONTROLLER</small></span><span class="pad-stick"><span></span></span><span class="pad-buttons"><b>J</b><b>K</b><b>L</b><b>W</b></span><span class="pad-select">SELECT</span></div>
+          <div class="pad-arrows">◀ <span>▶</span></div>
+        </div>
+        <div class="intro-slide intro-slide-items" data-illustration="3">
+          <div class="mini-art"><img src="assets/items/shield.png" alt=""/><div class="art-scan"></div></div>
+          <div class="item-transfer">➜</div>
+          <div class="tutorial-phone items-phone"><span class="phone-notch"></span><span class="items-caption">SELECT · INVENTARIO</span><div class="items-slots"><img src="assets/items/shield.png" alt=""/><img src="assets/items/chainsaw.png" alt=""/><span>+</span></div><span class="pad-select">SELECT</span></div>
+        </div>
+      </div>
+      <div class="intro-copy" aria-live="polite">
+        <div class="intro-step-title" id="introStepTitle">01 · CONECTÁ TU CELULAR</div>
+        <p id="introStepDescription">Conectate a internet. Para jugar, usá preferentemente la red Wi-Fi indicada en la instalación.</p>
+        <p class="intro-wifi-name" id="introWifiName" hidden></p>
+      </div>
+      <div class="intro-navigation" role="group" aria-label="Elegir paso del tutorial">
+        <button type="button" class="intro-dot active" data-tutorial-step="0" aria-label="Paso 1: red Wi-Fi" aria-pressed="true">1</button>
+        <button type="button" class="intro-dot" data-tutorial-step="1" aria-label="Paso 2: escanear QR" aria-pressed="false">2</button>
+        <button type="button" class="intro-dot" data-tutorial-step="2" aria-label="Paso 3: celular como control" aria-pressed="false">3</button>
+        <button type="button" class="intro-dot" data-tutorial-step="3" aria-label="Paso 4: SELECT e inventario" aria-pressed="false">4</button>
+        <button type="button" class="intro-play-toggle" id="introPlayToggle" aria-label="Pausar tutorial">Ⅱ</button>
+      </div>
+    </section>
+    <section class="intro-pair" aria-label="Vincular el celular">
+      <div class="intro-pair-label">ESCANEÁ PARA CONECTAR TU CONTROL</div>
+      <div class="intro-qr-frame"><img id="pairQR" alt="Código QR para vincular el celular con el juego" style="display:none"/></div>
+      <p id="pairStatus" class="intro-pair-status" role="status" aria-live="polite">Conectando con el servidor local…</p>
+      <div class="intro-start-tip">Después de conectar el celular, presioná <strong>START</strong> en el mando para comenzar.</div>
+    </section>
+  </div>
+</div><main class="wrap"><h1>COSWIG / NIVEL 1 — COMBATE HORIZONTAL</h1><p>Avanzá a izquierda y derecha. Agachate para esquivar los cuchillos del hooligan. Elegí una acción de ataque (espada o motosierra) y una de defensa (esquiva o escudo). La cerveza y la llave se usan aparte.</p><div class="game"><canvas id="game" width="540" height="960"></canvas></div><div class="controls"><button id="left">◀ A</button><button id="right">D ▶</button><button id="up">▲ W</button><button id="down">▼ S</button><button id="punch">👊 J Puño</button><button id="kick">🦶 K Patada</button><button id="sword">⚔ L Ataque</button><button id="dodge">↶ F Defensa</button><button id="interact">E Usar llave</button><button id="restart">Reiniciar</button></div><strong>Inventario — seleccioná objetos para equiparlos (máximo 2)</strong><div id="inventory"></div><label><input id="hitboxes" type="checkbox"> Ver colisiones</label><p><small>WASD: mover, saltar o agacharse · J: puños · K: patada · L: ataque equipado (espada/motosierra) · F: defensa equipada (esquiva/escudo) · B: beber cerveza · E: usar llave frente al castillo · 1–4: seleccionar equipo. Un ataque y una defensa.</small></p></main><script>
 'use strict';const cv=document.querySelector('#game'),c=cv.getContext('2d');c.imageSmoothingEnabled=false;
 const WORLD=7200,SEG=1800,GROUND=778,MAX_HP=12,anims={idle:[4,.28],walk:[6,.28],punch:[8,.28],kick:[8,.28],sword:[8,.28],dodge:[8,.28],shield:[4,.28],motosierra:[8,.384],cerveza:[8,.28],hit:[6,.34],death:[12,.325]},sprites={},background=[],layerAssets={};
 for(const [key,[n]] of Object.entries(anims)){sprites[key]=[];for(let i=1;i<=n;i++){const im=new Image();im.src=`sprites/${key}_${String(i).padStart(2,'0')}.png`;sprites[key].push(im)}}const enemyAnims={walk:[],punch:[]};
@@ -274,6 +352,42 @@ reset();requestAnimationFrame(loop);
 let gameStarted=false,gamePaused=false;
 const startEl=document.getElementById('startScreen');
 const statusEl=document.getElementById('pairStatus');
+
+// V18: tutorial auto-animado y navegable que NO interrumpe el WebSocket ni el QR.
+const tutorialSteps=[
+ {title:'01 · CONECTÁ TU CELULAR',description:'Conectate a internet. Para jugar, usá preferentemente la red Wi-Fi indicada en la instalación.'},
+ {title:'02 · ESCANEÁ EL QR',description:'Abrí la cámara del celular, apuntá al QR de abajo y entrá al enlace de conexión.'},
+ {title:'03 · TU CELULAR ES EL CONTROL',description:'La página que se abre transforma tu teléfono en el joystick y los botones del juego. Presioná START para comenzar.'},
+ {title:'04 · ENCONTRÁ Y EQUIPÁ OBJETOS',description:'Escaneá las imágenes de la pintura para recolectar objetos. Usá SELECT en el mando para elegir y equipar los que hayas descubierto.'}
+];
+let tutorialIndex=0,tutorialPlaying=true;
+const tutorialButtons=Array.from(document.querySelectorAll('[data-tutorial-step]'));
+const tutorialSlides=Array.from(document.querySelectorAll('[data-illustration]'));
+const tutorialToggle=document.getElementById('introPlayToggle');
+let recommendedWifi='';
+function updateRecommendedWifi(ssid){
+ recommendedWifi=String(ssid||'').trim().slice(0,80);
+ const el=document.getElementById('introWifiName');
+ el.hidden=!(recommendedWifi&&tutorialIndex===0);
+ el.textContent=recommendedWifi?'RED RECOMENDADA: '+recommendedWifi:'';
+}
+function renderTutorialStep(i){
+ tutorialIndex=(i+tutorialSteps.length)%tutorialSteps.length;
+ tutorialSlides.forEach((slide,j)=>slide.classList.toggle('active',j===tutorialIndex));
+ tutorialButtons.forEach((btn,j)=>{btn.classList.toggle('active',j===tutorialIndex);btn.setAttribute('aria-pressed',String(j===tutorialIndex));});
+ document.getElementById('introStepCount').textContent=String(tutorialIndex+1).padStart(2,'0')+' / 04';
+ document.getElementById('introStepTitle').textContent=tutorialSteps[tutorialIndex].title;
+ document.getElementById('introStepDescription').textContent=tutorialSteps[tutorialIndex].description;
+ updateRecommendedWifi(recommendedWifi);
+}
+function setTutorialPlaying(on){tutorialPlaying=on;tutorialToggle.textContent=on?'Ⅱ':'▶';tutorialToggle.setAttribute('aria-label',on?'Pausar tutorial':'Reanudar tutorial')}
+tutorialButtons.forEach((button,i)=>button.addEventListener('click',()=>{renderTutorialStep(i);setTutorialPlaying(false)}));
+tutorialToggle.addEventListener('click',()=>setTutorialPlaying(!tutorialPlaying));
+// El intervalo se limita a la pantalla inicial; no afecta la partida ni la pausa.
+setInterval(()=>{if(tutorialPlaying&&startEl.style.display!=='none'&&!document.hidden)renderTutorialStep(tutorialIndex+1)},4700);
+// Se puede especificar ?wifi=NombreDeRed, o configurar COSWIG_WIFI_SSID en el servidor.
+updateRecommendedWifi(new URLSearchParams(location.search).get('wifi'));
+
 function sendPhoneState(){
  if(remoteSocket?.readyState!==WebSocket.OPEN||!phoneConnected)return;
  remoteSocket.send(JSON.stringify({type:'host_state',started:gameStarted,paused:gamePaused,attack:hero.attackSlot,defense:hero.defenseSlot,unique:hero.uniqueSlot,owned:[...hero.owned],beers:hero.beers,hp:hero.hp}));
@@ -301,6 +415,7 @@ function connectRemote(){
   if(msg.type==='session'){
     remoteSession=msg.code;
 
+    if(msg.wifiSsid)updateRecommendedWifi(msg.wifiSsid);
     document.getElementById('pairQR').src=msg.qr;
     document.getElementById('pairQR').style.display='block';
 
@@ -308,7 +423,8 @@ function connectRemote(){
   }
   if(msg.type==='controller_status'){
     phoneConnected=!!msg.connected;
-    statusEl.textContent=phoneConnected?'✓ Celular conectado. Ya podés iniciar la partida.':'Celular desconectado. Escaneá el QR para reconectar.';
+    statusEl.textContent=phoneConnected?'✓ Celular conectado. Presioná START para jugar.':'Celular desconectado. Escaneá el QR para reconectar.';
+    statusEl.classList.toggle('connected',phoneConnected);
     if(phoneConnected)sendPhoneState();
     if(!phoneConnected)clearRemoteHold();
   }
