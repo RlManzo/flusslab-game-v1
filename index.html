@@ -1,4 +1,4 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Coswig — Nivel 1 / Cuatro partes</title><style>*{box-sizing:border-box}body{margin:0;background:#091814;color:#f3dfb6;font:15px system-ui}.wrap{max-width:620px;margin:auto;padding:10px}h1{font:26px Georgia;margin:8px 0}p{margin:6px 0 10px;color:#d0d9c7}.game{border:3px solid #b9a06b}canvas{display:block;width:100%;max-height:80vh;object-fit:contain;aspect-ratio:9/16;image-rendering:pixelated}.controls{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}button{border:1px solid #bea776;background:#203b32;color:#fff1d0;border-radius:4px;padding:11px 13px;font:inherit;touch-action:none;cursor:pointer}button:active{background:#49725b}small{color:#c4d4c6}#inventory{display:flex;gap:9px;flex-wrap:wrap;margin:10px 0}.item{border:1px solid #867b59;background:#142920;padding:8px;border-radius:5px}.item.equipped{border-color:#f5cf73;background:#3d3923}.item:disabled{opacity:.45}
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>THE OLD EVIL — LEVEL 1</title><style>*{box-sizing:border-box}body{margin:0;background:#091814;color:#f3dfb6;font:15px system-ui}.wrap{max-width:620px;margin:auto;padding:10px}h1{font:26px Georgia;margin:8px 0}p{margin:6px 0 10px;color:#d0d9c7}.game{border:3px solid #b9a06b}canvas{display:block;width:100%;max-height:80vh;object-fit:contain;aspect-ratio:9/16;image-rendering:pixelated}.controls{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}button{border:1px solid #bea776;background:#203b32;color:#fff1d0;border-radius:4px;padding:11px 13px;font:inherit;touch-action:none;cursor:pointer}button:active{background:#49725b}small{color:#c4d4c6}#inventory{display:flex;gap:9px;flex-wrap:wrap;margin:10px 0}.item{border:1px solid #867b59;background:#142920;padding:8px;border-radius:5px}.item.equipped{border-color:#f5cf73;background:#3d3923}.item:disabled{opacity:.45}
 /* V10: modo exposición Raspberry Pi / televisor vertical */
 html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#000;overscroll-behavior:none}
 .wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;max-width:none;width:100%;height:100%;padding:0;margin:0;overflow:hidden;background:#000}
@@ -34,40 +34,64 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#000;oversc
 .intro-navigation{display:flex;justify-content:center;align-items:center;gap:12px;margin-top:3px}.intro-dot,.intro-play-toggle{width:30px;height:30px;min-width:30px;padding:0;border:1px solid #928563;border-radius:3px;background:#19352c;color:#e9dbb9;cursor:pointer;font:bold 13px monospace}.intro-dot.active{background:#cfad64;color:#17291f;border-color:#f4d68e}.intro-play-toggle{margin-left:9px;font-size:15px}.intro-pair{display:flex;flex-direction:column;align-items:center;gap:clamp(5px,1vh,9px);width:100%}.intro-qr-frame{width:clamp(115px,18vh,185px);height:clamp(115px,18vh,185px);display:grid;place-items:center;background:white;padding:8px;border:3px solid #dfc38f;box-shadow:0 0 0 5px #173328}.intro-qr-frame img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated}.intro-pair-status{margin:1px 0;color:#eddfb8;font-size:clamp(11px,1.45vh,14px);line-height:1.3}.intro-pair-status.connected{color:#a2f2ba}.intro-start-tip{font-size:clamp(10px,1.3vh,13px);line-height:1.35;color:#b9cbb8}.intro-start-tip strong{color:#ffdf9b}
 @media (max-height:760px){.coswig-intro{padding:7px}.intro-shell{gap:5px}.intro-heading h1{font-size:39px}.intro-heading h2{font-size:12px}.intro-visual{height:115px}.intro-copy{min-height:60px}.intro-qr-frame{width:114px;height:114px}.intro-heading p{font-size:10px}}
 @media (prefers-reduced-motion:reduce){.coswig-intro *{animation-duration:.01ms!important;animation-iteration-count:1!important}}
-</style></head><body><div id="startScreen" class="coswig-intro" role="region" aria-label="Pantalla de inicio de Coswig">
+
+/* THE OLD EVIL · arcade/MAME interface · painting-derived palette */
+:root{--evil-dark:#082c22;--evil-green:#075333;--evil-forest:#17613b;--evil-light:#ecebd6;--evil-coral:#f27672;--evil-blue:#163c77;--evil-ink:#10241b}
+body{color:var(--evil-light);font-family:"Courier New",monospace!important;letter-spacing:.035em}
+button,.panel,.intro-howto,.intro-qr-frame,.intro-dot,.intro-play-toggle,.item,.slots,.lang-picker select{border-radius:0!important}
+button{background:var(--evil-forest)!important;border:2px solid var(--evil-coral)!important;color:var(--evil-light)!important;font-family:"Courier New",monospace!important;font-weight:900!important;box-shadow:3px 3px 0 var(--evil-ink)!important;text-transform:uppercase}
+button:active{box-shadow:0 0 0 transparent!important;transform:translate(2px,2px)}
+.coswig-intro{background:repeating-linear-gradient(180deg,#06281d,#06281d 8px,#073022 8px,#073022 11px)!important;color:var(--evil-light)!important}
+.intro-heading h1{margin:0!important;line-height:1!important;text-shadow:none!important}
+.game-logo-title img{display:block;width:min(92vw,390px);max-height:clamp(94px,14vh,156px);object-fit:contain;image-rendering:pixelated;margin:auto}
+.intro-heading h2{color:var(--evil-coral)!important;font-family:monospace!important}
+.intro-heading p,.intro-copy p,.intro-start-tip{color:var(--evil-light)!important}
+.intro-eyebrow,.intro-topline,.intro-pair-label,.intro-step-title{color:var(--evil-coral)!important}
+.intro-howto,.intro-pair{background:var(--evil-dark)!important;border:3px solid var(--evil-coral)!important;padding:clamp(8px,1.4vh,14px)!important}
+.intro-visual{background:linear-gradient(0deg,var(--evil-green),var(--evil-forest))!important;border:2px solid var(--evil-light)!important}
+.intro-dot.active{background:var(--evil-coral)!important;color:var(--evil-ink)!important}
+.intro-pair-label{font-weight:900}.intro-qr-frame{border:4px solid var(--evil-coral)!important;box-shadow:4px 4px 0 var(--evil-blue)!important}
+.intro-pair-status.connected{color:#9ce2ab!important}
+.lang-picker{display:flex;flex-direction:column;gap:8px;align-items:center;width:100%;font:900 12px monospace;color:var(--evil-coral)}
+.lang-picker select{width:100%;padding:10px;background:var(--evil-green);color:var(--evil-light);border:2px solid var(--evil-coral);font:900 16px monospace}
+#pauseOverlay section{background:var(--evil-dark)!important;border:4px solid var(--evil-coral)!important;box-shadow:8px 8px 0 var(--evil-blue)!important}
+#pauseOverlay button{background:var(--evil-green)!important;border:2px solid var(--evil-coral)!important}
+#pauseOverlay strong{color:var(--evil-coral);font-size:28px;text-shadow:3px 3px 0 #001d14}
+@media(max-height:760px){.game-logo-title img{max-height:78px}.intro-howto{padding:6px!important}.intro-shell{gap:4px}.intro-pair{padding:6px!important}}
+</style></head><body><div id="startScreen" class="coswig-intro" role="region" aria-label="Pantalla de inicio de The Old Evil">
   <div class="intro-shell">
     <header class="intro-heading">
-      <span class="intro-eyebrow">FLUSSLAB · EXPERIENCIA INTERACTIVA</span>
-      <h1>COSWIG</h1>
-      <h2>LOS DOCE APÓSTOLES</h2>
-      <p>Conectá tu celular. Explorá el mundo. Descubrí objetos en la pintura.</p>
+      <span class="intro-eyebrow">FLUSSLAB · INTERACTIVE EXPERIENCE</span>
+      <h1 class="game-logo-title"><img src="assets/the_old_evil_logo.png" alt="THE OLD EVIL"/></h1>
+      <h2>AN ANCIENT EVIL RETURNS</h2>
+      <p>Connect your phone. Explore the world. Discover items in the painting.</p>
     </header>
     <section class="intro-howto" aria-label="Tutorial interactivo">
-      <div class="intro-topline"><span>GUÍA PARA JUGAR</span><span id="introStepCount">01 / 04</span></div>
+      <div class="intro-topline"><span>HOW TO PLAY</span><span id="introStepCount">01 / 04</span></div>
       <div class="intro-visual" id="introVisual" aria-hidden="true">
         <div class="intro-slide intro-slide-wifi active" data-illustration="0">
-          <div class="wifi-router"><span class="router-led"></span><span class="router-name">COSWIG WIFI</span><div class="wifi-wave wave-1"></div><div class="wifi-wave wave-2"></div><div class="wifi-wave wave-3"></div></div>
+          <div class="wifi-router"><span class="router-led"></span><span class="router-name">GAME WI-FI</span><div class="wifi-wave wave-1"></div><div class="wifi-wave wave-2"></div><div class="wifi-wave wave-3"></div></div>
           <div class="tutorial-phone wifi-phone"><span class="phone-notch"></span><span class="wifi-phone-signal">◉</span><span class="phone-label">Wi-Fi</span><span class="phone-check">✓</span></div>
           <div class="intro-connection"></div>
         </div>
         <div class="intro-slide intro-slide-qr" data-illustration="1">
           <div class="qr-illustration"><span class="qr-pixels">▦</span><span class="qr-marker qr-a"></span><span class="qr-marker qr-b"></span><span class="qr-marker qr-c"></span></div>
           <div class="scan-outline"><span class="scan-line"></span></div>
-          <div class="tutorial-phone scan-phone"><span class="phone-notch"></span><span class="phone-camera">▣</span><span class="phone-label">CÁMARA</span></div>
+          <div class="tutorial-phone scan-phone"><span class="phone-notch"></span><span class="phone-camera">▣</span><span class="phone-label">CAMERA</span></div>
         </div>
         <div class="intro-slide intro-slide-pad" data-illustration="2">
-          <div class="tutorial-phone controller-phone"><span class="phone-notch"></span><span class="pad-header">COSWIG <small>CONTROLLER</small></span><span class="pad-stick"><span></span></span><span class="pad-buttons"><b>J</b><b>K</b><b>L</b><b>W</b></span><span class="pad-select">SELECT</span></div>
+          <div class="tutorial-phone controller-phone"><span class="phone-notch"></span><span class="pad-header">THE OLD EVIL <small>CONTROLLER</small></span><span class="pad-stick"><span></span></span><span class="pad-buttons"><b>J</b><b>K</b><b>L</b><b>W</b></span><span class="pad-select">SELECT</span></div>
           <div class="pad-arrows">◀ <span>▶</span></div>
         </div>
         <div class="intro-slide intro-slide-items" data-illustration="3">
           <div class="mini-art"><img src="assets/items/shield.png" alt=""/><div class="art-scan"></div></div>
           <div class="item-transfer">➜</div>
-          <div class="tutorial-phone items-phone"><span class="phone-notch"></span><span class="items-caption">SELECT · INVENTARIO</span><div class="items-slots"><img src="assets/items/shield.png" alt=""/><img src="assets/items/chainsaw.png" alt=""/><span>+</span></div><span class="pad-select">SELECT</span></div>
+          <div class="tutorial-phone items-phone"><span class="phone-notch"></span><span class="items-caption">SELECT · INVENTORY</span><div class="items-slots"><img src="assets/items/shield.png" alt=""/><img src="assets/items/chainsaw.png" alt=""/><span>+</span></div><span class="pad-select">SELECT</span></div>
         </div>
       </div>
       <div class="intro-copy" aria-live="polite">
-        <div class="intro-step-title" id="introStepTitle">01 · CONECTÁ TU CELULAR</div>
-        <p id="introStepDescription">Conectate a internet. Para jugar, usá preferentemente la red Wi-Fi indicada en la instalación.</p>
+        <div class="intro-step-title" id="introStepTitle">01 · CONNECT TO WI-FI</div>
+        <p id="introStepDescription">Connect to the recommended Wi-Fi network before playing.</p>
         <p class="intro-wifi-name" id="introWifiName" hidden></p>
       </div>
       <div class="intro-navigation" role="group" aria-label="Elegir paso del tutorial">
@@ -79,13 +103,62 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#000;oversc
       </div>
     </section>
     <section class="intro-pair" aria-label="Vincular el celular">
-      <div class="intro-pair-label">ESCANEÁ PARA CONECTAR TU CONTROL</div>
+      <div class="intro-pair-label">SCAN TO CONNECT YOUR CONTROLLER</div>
       <div class="intro-qr-frame"><img id="pairQR" alt="Código QR para vincular el celular con el juego" style="display:none"/></div>
-      <p id="pairStatus" class="intro-pair-status" role="status" aria-live="polite">Conectando con el servidor local…</p>
-      <div class="intro-start-tip">Después de conectar el celular, presioná <strong>START</strong> en el mando para comenzar.</div>
+      <p id="pairStatus" class="intro-pair-status" role="status" aria-live="polite">Connecting to the local server…</p>
+      <div class="intro-start-tip">Once connected, press <strong>START</strong> en el mando para comenzar.</div>
     </section>
   </div>
-</div><main class="wrap"><h1>COSWIG / NIVEL 1 — COMBATE HORIZONTAL</h1><p>Avanzá a izquierda y derecha. Agachate para esquivar los cuchillos del hooligan. Elegí una acción de ataque (espada o motosierra) y una de defensa (esquiva o escudo). La cerveza y la llave se usan aparte.</p><div class="game"><canvas id="game" width="540" height="960"></canvas></div><div class="controls"><button id="left">◀ A</button><button id="right">D ▶</button><button id="up">▲ W</button><button id="down">▼ S</button><button id="punch">👊 J Puño</button><button id="kick">🦶 K Patada</button><button id="sword">⚔ L Ataque</button><button id="dodge">↶ F Defensa</button><button id="interact">E Usar llave</button><button id="restart">Reiniciar</button></div><strong>Inventario — seleccioná objetos para equiparlos (máximo 2)</strong><div id="inventory"></div><label><input id="hitboxes" type="checkbox"> Ver colisiones</label><p><small>WASD: mover, saltar o agacharse · J: puños · K: patada · L: ataque equipado (espada/motosierra) · F: defensa equipada (esquiva/escudo) · B: beber cerveza · E: usar llave frente al castillo · 1–4: seleccionar equipo. Un ataque y una defensa.</small></p></main><script>
+</div><main class="wrap"><h1>THE OLD EVIL / LEVEL 1 — SIDE-SCROLLING COMBAT</h1><p>Avanzá a izquierda y derecha. Agachate para esquivar los cuchillos del hooligan. Elegí una acción de ataque (espada o motosierra) y una de defensa (esquiva o escudo). La cerveza y la llave se usan aparte.</p><div class="game"><canvas id="game" width="540" height="960"></canvas></div><div class="controls"><button id="left">◀ A</button><button id="right">D ▶</button><button id="up">▲ W</button><button id="down">▼ S</button><button id="punch">👊 J Puño</button><button id="kick">🦶 K Patada</button><button id="sword">⚔ L Ataque</button><button id="dodge">↶ F Defensa</button><button id="interact">E Usar llave</button><button id="restart">Reiniciar</button></div><strong>Inventario — seleccioná objetos para equiparlos (máximo 2)</strong><div id="inventory"></div><label><input id="hitboxes" type="checkbox"> Ver colisiones</label><p><small>WASD: mover, saltar o agacharse · J: puños · K: patada · L: ataque equipado (espada/motosierra) · F: defensa equipada (esquiva/escudo) · B: beber cerveza · E: usar llave frente al castillo · 1–4: seleccionar equipo. Un ataque y una defensa.</small></p></main><script>
+
+const UI_TRANSLATIONS={"01 · CONECTÁ TU CELULAR":{"en":"01 · CONNECT TO WI-FI","de":"01 · VERBIND MIT WLAN","es":"01 · CONECTÁ TU CELULAR"},"02 · ESCANEÁ EL QR":{"en":"02 · SCAN THE QR CODE","de":"02 · QR-CODE SCANNEN","es":"02 · ESCANEÁ EL QR"},"03 · TU CELULAR ES EL CONTROL":{"en":"03 · YOUR PHONE IS THE CONTROLLER","de":"03 · DEIN HANDY IST DER CONTROLLER","es":"03 · TU CELULAR ES EL CONTROL"},"04 · ENCONTRÁ Y EQUIPÁ OBJETOS":{"en":"04 · FIND AND EQUIP ITEMS","de":"04 · OBJEKTE FINDEN UND AUSRÜSTEN","es":"04 · ENCONTRÁ Y EQUIPÁ OBJETOS"},"Conectate a internet. Para jugar, usá preferentemente la red Wi-Fi indicada en la instalación.":{"en":"Connect to the recommended Wi-Fi network before playing.","de":"Verbinde dich vor dem Spielen mit dem empfohlenen WLAN.","es":"Conectate a internet. Para jugar, usá preferentemente la red Wi-Fi indicada en la instalación."},"Abrí la cámara del celular, apuntá al QR de abajo y entrá al enlace de conexión.":{"en":"Open your phone camera and scan the QR code below.","de":"Öffne die Handykamera und scanne den QR-Code unten.","es":"Abrí la cámara del celular, apuntá al QR de abajo y entrá al enlace de conexión."},"La página que se abre transforma tu teléfono en el joystick y los botones del juego. Presioná START para comenzar.":{"en":"Your phone becomes a controller with a joystick and buttons. Press START to play.","de":"Dein Handy wird zum Controller mit Joystick und Tasten. Drücke START.","es":"La página que se abre transforma tu teléfono en el joystick y los botones del juego. Presioná START para comenzar."},"Escaneá las imágenes de la pintura para recolectar objetos. Usá SELECT en el mando para elegir y equipar los que hayas descubierto.":{"en":"Scan images in the artwork to collect items. Press SELECT to equip what you find.","de":"Scanne Bilder im Kunstwerk, um Objekte zu sammeln. Drücke SELECT zum Ausrüsten.","es":"Escaneá las imágenes de la pintura para recolectar objetos. Usá SELECT en el mando para elegir y equipar los que hayas descubierto."},"RED RECOMENDADA: ":{"en":"RECOMMENDED NETWORK: ","de":"EMPFOHLENES WLAN: ","es":"RED RECOMENDADA: "},"FLUSSLAB · EXPERIENCIA INTERACTIVA":{"en":"FLUSSLAB · INTERACTIVE EXPERIENCE","de":"FLUSSLAB · INTERAKTIVES ERLEBNIS","es":"FLUSSLAB · EXPERIENCIA INTERACTIVA"},"AN ANCIENT EVIL RETURNS":{"en":"AN ANCIENT EVIL RETURNS","de":"DIE ZWÖLF APOSTEL","es":"AN ANCIENT EVIL RETURNS"},"Conectá tu celular. Explorá el mundo. Descubrí objetos en la pintura.":{"en":"Connect your phone. Explore the world. Discover items in the painting.","de":"Verbinde dein Handy. Erkunde die Welt. Entdecke Objekte im Bild.","es":"Conectá tu celular. Explorá el mundo. Descubrí objetos en la pintura."},"GUÍA PARA JUGAR":{"en":"HOW TO PLAY","de":"SPIELANLEITUNG","es":"GUÍA PARA JUGAR"},"ESCANEÁ PARA CONECTAR TU CONTROL":{"en":"SCAN TO CONNECT YOUR CONTROLLER","de":"SCANNEN, UM DEN CONTROLLER ZU VERBINDEN","es":"ESCANEÁ PARA CONECTAR TU CONTROL"},"Conectando con el servidor local…":{"en":"Connecting to the local server…","de":"Verbindung zum lokalen Server…","es":"Conectando con el servidor local…"},"Después de conectar el celular, presioná":{"en":"Once connected, press","de":"Drücke nach dem Verbinden","es":"Después de conectar el celular, presioná"},"en el mando para comenzar.":{"en":"on your controller to play.","de":"auf deinem Controller zum Starten.","es":"en el mando para comenzar."},"CÁMARA":{"en":"CAMERA","de":"KAMERA","es":"CÁMARA"},"INVENTARIO":{"en":"INVENTORY","de":"INVENTAR","es":"INVENTARIO"},"PAUSA":{"en":"PAUSED","de":"PAUSE","es":"PAUSA"},"Partida detenida":{"en":"Game paused","de":"Spiel pausiert","es":"Partida detenida"},"CONTINUAR":{"en":"RESUME","de":"FORTSETZEN","es":"CONTINUAR"},"RESTART · NUEVA PARTIDA":{"en":"RESTART · NEW GAME","de":"NEUSTART · NEUES SPIEL","es":"RESTART · NUEVA PARTIDA"},"RESTART":{"en":"RESTART","de":"NEUSTART","es":"RESTART"},"START para continuar · RESTART vuelve al comienzo":{"en":"START to resume · RESTART begins again","de":"START zum Fortsetzen · NEUSTART von vorn","es":"START para continuar · RESTART vuelve al comienzo"},"LANGUAGE":{"en":"LANGUAGE","de":"SPRACHE","es":"LANGUAGE"},"Sin conexión":{"en":"Offline","de":"Nicht verbunden","es":"Sin conexión"},"ESPADA · ESQUIVA":{"en":"SWORD · DODGE","de":"SCHWERT · AUSWEICHEN","es":"ESPADA · ESQUIVA"},"CONECTAR":{"en":"CONNECT","de":"VERBINDEN","es":"CONECTAR"},"CÓDIGO":{"en":"CODE","de":"CODE","es":"CÓDIGO"},"Volver al juego":{"en":"BACK TO GAME","de":"ZURÜCK ZUM SPIEL","es":"Volver al juego"},"VOLVER AL JUEGO":{"en":"BACK TO GAME","de":"ZURÜCK ZUM SPIEL","es":"VOLVER AL JUEGO"},"CONFIRMAR OBJETO":{"en":"CONFIRM ITEM","de":"OBJEKT BESTÄTIGEN","es":"CONFIRMAR OBJETO"},"REINICIAR ESCANEO":{"en":"SCAN AGAIN","de":"ERNEUT SCANNEN","es":"REINICIAR ESCANEO"},"ENCUADRÁ UNA CASILLA":{"en":"FRAME ONE ITEM","de":"EIN OBJEKT EINRAHMEN","es":"ENCUADRÁ UNA CASILLA"},"Cámara apagada":{"en":"Camera off","de":"Kamera aus","es":"Cámara apagada"},"Diagnóstico de cámara":{"en":"Camera diagnostics","de":"Kameradiagnose","es":"Diagnóstico de cámara"},"Encuadrá UN objeto de la pintura en el recuadro. Mantené el celular firme. Solo podrás equipar objetos que hayas conseguido.":{"en":"Frame ONE item from the painting. Hold your phone steady. Only collected items can be equipped.","de":"Richte die Kamera auf EIN Objekt im Bild. Halte dein Handy ruhig. Nur gesammelte Objekte lassen sich ausrüsten.","es":"Encuadrá UN objeto de la pintura en el recuadro. Mantené el celular firme. Solo podrás equipar objetos que hayas conseguido."},"Escaneá el QR de la computadora para vincular este mando.":{"en":"Scan the QR code on the game screen to connect your controller.","de":"Scanne den QR-Code auf dem Spielbildschirm, um deinen Controller zu verbinden.","es":"Escaneá el QR de la computadora para vincular este mando."},"SELECT · PINTURA":{"en":"SELECT · ARTWORK","de":"SELECT · KUNSTWERK","es":"SELECT · PINTURA"},"THE OLD EVIL · CONECTAR":{"en":"THE OLD EVIL · CONNECT","de":"THE OLD EVIL · VERBINDEN","es":"THE OLD EVIL · CONECTAR"},"EQUIPAR EN D":{"en":"EQUIP TO D","de":"AUF D AUSRÜSTEN","es":"EQUIPAR EN D"},"EQUIPAR EN R2":{"en":"EQUIP TO R2","de":"AUF R2 AUSRÜSTEN","es":"EQUIPAR EN R2"},"📷 ACTIVAR":{"en":"📷 ENABLE","de":"📷 AKTIVIEREN","es":"📷 ACTIVAR"},"APAGAR":{"en":"DISABLE","de":"DEAKTIVIEREN","es":"APAGAR"},"Vista de cámara opcional":{"en":"Optional camera view","de":"Optionale Kameraansicht","es":"Vista de cámara opcional"},"Buscando objeto…":{"en":"Scanning for item…","de":"Suche nach Objekt…","es":"Buscando objeto…"},"PARTE":{"en":"STAGE","de":"ABSCHNITT","es":"PARTE"},"CASTILLO":{"en":"CASTLE","de":"SCHLOSS","es":"CASTILLO"},"DERROTA":{"en":"GAME OVER","de":"NIEDERLAGE","es":"DERROTA"},"PRESIONÁ REINICIAR":{"en":"PRESS RESTART","de":"NEUSTART DRÜCKEN","es":"PRESIONÁ REINICIAR"},"INTERIOR DEL CASTILLO":{"en":"INSIDE THE CASTLE","de":"IM SCHLOSS","es":"INTERIOR DEL CASTILLO"},"JEFE":{"en":"BOSS","de":"BOSS","es":"JEFE"},"¡ENCONTRASTE!":{"en":"YOU FOUND!","de":"GEFUNDEN!","es":"¡ENCONTRASTE!"},"LLAVE":{"en":"KEY","de":"SCHLÜSSEL","es":"LLAVE"},"CERVEZA":{"en":"BEER","de":"BIER","es":"CERVEZA"},"ESCUDO":{"en":"SHIELD","de":"SCHILD","es":"ESCUDO"},"ESQUIVA":{"en":"DODGE","de":"AUSWEICHEN","es":"ESQUIVA"},"ESPADA":{"en":"SWORD","de":"SCHWERT","es":"ESPADA"},"MOTOSIERRA":{"en":"CHAINSAW","de":"KETTENSÄGE","es":"MOTOSIERRA"},"LIBRO":{"en":"BOOK","de":"BUCH","es":"LIBRO"},"FAROL":{"en":"LANTERN","de":"LATERNE","es":"FAROL"},"ERIZO":{"en":"HEDGEHOG","de":"IGEL","es":"ERIZO"},"EMBLEMA":{"en":"EMBLEM","de":"EMBLEM","es":"EMBLEMA"},"OBJETO":{"en":"ITEM","de":"OBJEKT","es":"OBJETO"},"OBJETO ROJO":{"en":"RED ITEM","de":"ROTES OBJEKT","es":"OBJETO ROJO"},"VACÍO":{"en":"EMPTY","de":"LEER","es":"VACÍO"},"SEGUIR":{"en":"RESUME","de":"WEITER","es":"SEGUIR"},"Conectando…":{"en":"Connecting…","de":"Verbinde…","es":"Conectando…"},"● Conectado":{"en":"● Connected","de":"● Verbunden","es":"● Conectado"},"Desconectado":{"en":"Disconnected","de":"Getrennt","es":"Desconectado"},"Conexión perdida. Volvé a conectar.":{"en":"Connection lost. Reconnect.","de":"Verbindung verloren. Bitte erneut verbinden.","es":"Conexión perdida. Volvé a conectar."},"Esperando a que escanees el QR con el celular…":{"en":"Waiting for you to scan the QR code…","de":"Warte auf das Scannen des QR-Codes…","es":"Esperando a que escanees el QR con el celular…"},"✓ Celular conectado. Presioná START para jugar.":{"en":"✓ Phone connected. Press START to play.","de":"✓ Handy verbunden. Drücke START zum Spielen.","es":"✓ Celular conectado. Presioná START para jugar."},"Celular desconectado. Escaneá el QR para reconectar.":{"en":"Phone disconnected. Scan QR to reconnect.","de":"Handy getrennt. QR-Code erneut scannen.","es":"Celular desconectado. Escaneá el QR para reconectar."},"Se perdió la conexión. Reconectando…":{"en":"Connection lost. Reconnecting…","de":"Verbindung verloren. Verbinde erneut…","es":"Se perdió la conexión. Reconectando…"},"No se pudo conectar. Iniciá el juego usando npm start.":{"en":"Could not connect. Start the game using npm start.","de":"Keine Verbindung. Starte das Spiel mit npm start.","es":"No se pudo conectar. Iniciá el juego usando npm start."},"THE OLD EVIL · CONTROL":{"en":"THE OLD EVIL · CONTROLLER","de":"THE OLD EVIL · CONTROLLER","es":"THE OLD EVIL · CONTROL"},"REPOSO":{"en":"IDLE","de":"RUHESTELLUNG","es":"REPOSO"}};
+Object.assign(UI_TRANSLATIONS,{"AN ANCIENT EVIL RETURNS":{"en": "AN ANCIENT EVIL RETURNS", "de": "EIN URALTES BÖSES KEHRT ZURÜCK", "es": "AN ANCIENT EVIL RETURNS"},"UN MAL ANTIGUO REGRESA":{"en": "AN ANCIENT EVIL RETURNS", "de": "EIN URALTES BÖSES KEHRT ZURÜCK", "es": "UN MAL ANTIGUO REGRESA"},"SELECT · INVENTARIO":{"en": "SELECT · INVENTORY", "de": "SELECT · INVENTAR", "es": "SELECT · INVENTARIO"},"Después de conectar el celular, presioná":{"en": "Once connected, press", "de": "Drücke nach dem Verbinden", "es": "Después de conectar el celular, presioná"},"en el mando para comenzar.":{"en": "on your controller to play.", "de": "auf dem Controller zum Starten.", "es": "en el mando para comenzar."},"THE OLD EVIL / NIVEL 1 — COMBATE HORIZONTAL":{"en": "THE OLD EVIL / LEVEL 1 — SIDE-SCROLLING COMBAT", "de": "THE OLD EVIL / LEVEL 1 — SIDE-SCROLLING-KAMPF", "es": "THE OLD EVIL / NIVEL 1 — COMBATE HORIZONTAL"},"Avanzá a izquierda y derecha. Agachate para esquivar los cuchillos del hooligan. Elegí una acción de ataque (espada o motosierra) y una de defensa (esquiva o escudo). La cerveza y la llave se usan aparte.":{"en": "Move left or right. Duck to dodge knives. Choose an attack and a defense. Beer and keys are used separately.", "de": "Bewege dich nach links oder rechts. Duck dich vor Messern. Wähle Angriff und Verteidigung. Bier und Schlüssel werden getrennt benutzt.", "es": "Avanzá a izquierda y derecha. Agachate para esquivar los cuchillos del hooligan. Elegí una acción de ataque (espada o motosierra) y una de defensa (esquiva o escudo). La cerveza y la llave se usan aparte."},"👊 J Puño":{"en": "👊 J Punch", "de": "👊 J Faustschlag", "es": "👊 J Puño"},"🦶 K Patada":{"en": "🦶 K Kick", "de": "🦶 K Tritt", "es": "🦶 K Patada"},"⚔ L Ataque":{"en": "⚔ L Attack", "de": "⚔ L Angriff", "es": "⚔ L Ataque"},"↶ F Defensa":{"en": "↶ F Defend", "de": "↶ F Abwehr", "es": "↶ F Defensa"},"E Usar llave":{"en": "E Use key", "de": "E Schlüssel benutzen", "es": "E Usar llave"},"Reiniciar":{"en": "Restart", "de": "Neustart", "es": "Reiniciar"},"Inventario — seleccioná objetos para equiparlos (máximo 2)":{"en": "Inventory — equip up to 2 items", "de": "Inventar — bis zu 2 Objekte ausrüsten", "es": "Inventario — seleccioná objetos para equiparlos (máximo 2)"},"Ver colisiones":{"en": "Show hitboxes", "de": "Trefferzonen anzeigen", "es": "Ver colisiones"},"WASD: mover, saltar o agacharse · J: puños · K: patada · L: ataque equipado (espada/motosierra) · F: defensa equipada (esquiva/escudo) · B: beber cerveza · E: usar llave frente al castillo · 1–4: seleccionar equipo. Un ataque y una defensa.":{"en": "WASD: move, jump or duck · J: punch · K: kick · L: equipped attack · F: defense · B: drink beer · E: use key · 1–4: equip items.", "de": "WASD: laufen, springen oder ducken · J: schlagen · K: treten · L: Angriff · F: Abwehr · B: Bier trinken · E: Schlüssel benutzen · 1–4: Ausrüstung.", "es": "WASD: mover, saltar o agacharse · J: puños · K: patada · L: ataque equipado (espada/motosierra) · F: defensa equipada (esquiva/escudo) · B: beber cerveza · E: usar llave frente al castillo · 1–4: seleccionar equipo. Un ataque y una defensa."},"L: ESPADA o MOTOSIERRA · F: ESQUIVA o ESCUDO (mantener) · B: CERVEZA (cura 12 corazones) · E: LLAVE frente al castillo. Escudo y motosierra pueden estar equipados simultáneamente.":{"en": "L: SWORD or CHAINSAW · F: DODGE or SHIELD · B: BEER (restores health) · E: KEY by the castle. Shield and chainsaw can be equipped together.", "de": "L: SCHWERT oder KETTENSÄGE · F: AUSWEICHEN oder SCHILD · B: BIER (heilt) · E: SCHLÜSSEL am Schloss. Schild und Kettensäge gleichzeitig möglich.", "es": "L: ESPADA o MOTOSIERRA · F: ESQUIVA o ESCUDO (mantener) · B: CERVEZA (cura 12 corazones) · E: LLAVE frente al castillo. Escudo y motosierra pueden estar equipados simultáneamente."},"🍺 Cerveza (B)":{"en": "🍺 Beer (B)", "de": "🍺 Bier (B)", "es": "🍺 Cerveza (B)"},"THE OLD EVIL · Mando":{"en": "THE OLD EVIL · CONTROLLER", "de": "THE OLD EVIL · CONTROLLER", "es": "THE OLD EVIL · Mando"},"THE OLD EVIL · CONTROL":{"en": "THE OLD EVIL · CONTROLLER", "de": "THE OLD EVIL · CONTROLLER", "es": "THE OLD EVIL · CONTROL"},"LANGUAGE / IDIOMA / SPRACHE":{"en": "LANGUAGE", "de": "SPRACHE", "es": "LANGUAGE / IDIOMA / SPRACHE"},"RESTART · NUEVA PARTIDA":{"en": "RESTART · NEW GAME", "de": "NEUSTART · NEUES SPIEL", "es": "RESTART · NUEVA PARTIDA"},"Conexión perdida. Volvé a conectar.":{"en": "Connection lost. Reconnect.", "de": "Verbindung verloren. Erneut verbinden.", "es": "Conexión perdida. Volvé a conectar."},"ENCUADRÁ UNA CASILLA":{"en": "FRAME ONE ITEM", "de": "EIN OBJEKT EINRAHMEN", "es": "ENCUADRÁ UNA CASILLA"},"El mando sigue funcionando.":{"en": "The controller still works.", "de": "Der Controller funktioniert weiterhin.", "es": "El mando sigue funcionando."},"ESPADA · ESQUIVA":{"en": "SWORD · DODGE", "de": "SCHWERT · AUSWEICHEN", "es": "ESPADA · ESQUIVA"},"REINICIAR":{"en": "RESTART", "de": "NEUSTART", "es": "REINICIAR"}});
+let currentLanguage='en';
+const i18nReverse={};
+for(const [es,forms] of Object.entries(UI_TRANSLATIONS)){
+ for(const code of ['en','es','de'])i18nReverse[forms[code]]=es;
+}
+function tr(s){
+ const src=String(s), trimmed=src.trim();
+ const key=i18nReverse[trimmed]||trimmed;
+ const value=UI_TRANSLATIONS[key]?.[currentLanguage];
+ if(value!==undefined)return src.replace(trimmed,value);
+ // Dynamic messages with numeric values, names or changing statuses.
+ const rules=[
+  [/^D: (.+?) \| W: (.+?) \| R2: (.+)$/,m=>`D: ${tr(m[1])} | W: ${tr(m[2])} | R2: ${tr(m[3])}`],
+  [/^(.+) · (.+)$/,m=>`${tr(m[1])} · ${tr(m[2])}`],
+  [/^RESTART · (.+)$/,m=>`${tr('RESTART')} · ${tr(m[1])}`]
+ ];
+ for(const [re,fn] of rules){const m=trimmed.match(re);if(m)return fn(m)}
+ return src;
+}
+const originalTexts=new WeakMap();
+function localizeTree(root){
+ const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+ let node;
+ while((node=walker.nextNode())){
+  const parent=node.parentElement;
+  if(!parent||/^(SCRIPT|STYLE|TEXTAREA)$/.test(parent.tagName))continue;
+  const text=node.nodeValue;
+  let original=originalTexts.get(node);
+  if(original===undefined||(!Object.values(UI_TRANSLATIONS).some(v=>Object.values(v).includes(text.trim()))&&text!==tr(original)))original=text;
+  originalTexts.set(node,original);
+  const translated=tr(original);
+  if(node.nodeValue!==translated)node.nodeValue=translated;
+ }
+}
+function setLanguage(lang){
+ if(!['en','es','de'].includes(lang))return;
+ currentLanguage=lang;
+ document.documentElement.lang=lang;
+ localizeTree(document.body);
+ if(typeof renderTutorialStep==='function')renderTutorialStep(tutorialIndex);
+ if(typeof renderPauseLanguage==='function')renderPauseLanguage();
+ if(typeof renderInventory==='function')renderInventory();
+ if(typeof renderState==='function')renderState();
+ if(typeof sendPhoneState==='function')sendPhoneState();
+}
+
 'use strict';const cv=document.querySelector('#game'),c=cv.getContext('2d');c.imageSmoothingEnabled=false;
 const WORLD=7200,SEG=1800,GROUND=778,MAX_HP=12,anims={idle:[4,.28],walk:[6,.28],punch:[8,.28],kick:[8,.28],sword:[8,.28],dodge:[8,.28],shield:[4,.28],motosierra:[8,.384],cerveza:[8,.28],hit:[6,.34],death:[12,.325]},sprites={},background=[],layerAssets={};
 for(const [key,[n]] of Object.entries(anims)){sprites[key]=[];for(let i=1;i<=n;i++){const im=new Image();im.src=`sprites/${key}_${String(i).padStart(2,'0')}.png`;sprites[key].push(im)}}const enemyAnims={walk:[],punch:[]};
@@ -144,9 +217,9 @@ function drawAcquired(){
  c.fillStyle='rgba(4,18,15,.83)';c.fillRect(35,312,470,320);
  c.strokeStyle='#f2d68a';c.lineWidth=4;c.strokeRect(39,316,462,312);
  c.textAlign='center';c.fillStyle='#ffedbb';c.font='bold 29px monospace';
- c.fillText('¡ENCONTRASTE!',270,378);
+ c.fillText(tr('¡ENCONTRASTE!'),270,378);
  drawItemArt(acquiredNotice.id,185,390,170,154);
- c.font='bold 33px monospace';c.fillText(acquiredNotice.title,270,587);
+ c.font='bold 33px monospace';c.fillText(tr(acquiredNotice.title),270,587);
  c.textAlign='start';
 }
 const guardFrames=Array.from({length:4},(_,i)=>{const im=new Image();im.src=`sprites/shield_guard_${String(i+1).padStart(2,'0')}.png`;return im});const itemNames={sword:'Espada',shield:'Escudo',key:'Llave',chainsaw:'Motosierra'};const inventoryEl=document.querySelector('#inventory');const specialNames={book:'Libro',lantern:'Farol',hedgehog:'Erizo',emblem:'Emblema',red:'Objeto rojo'};
@@ -292,7 +365,7 @@ if(e.role==='knife'&&e.shot<=0&&dx<0&&dx>-480&&e.anim!=='punch'&&e.anim!=='hit')
 projectiles=projectiles.filter(q=>q.life>0&&Math.abs(q.x-hero.x)<750);
 if(interior){if(castleWave===1&&enemies.every(e=>e.dead)){castleWave=2;enemies=[spawn(420,'boss',GROUND)];bossSpawned=true;say('¡APARECE EL JEFE DEL NIVEL! Combiná puños, patadas y armas.',6)}}else{for(let i=0;i<4;i++){let ph=phases[i];if(ph.spawned&&!ph.cleared&&enemies.filter(e=>!e.dead&&e.x>=ph.start&&e.x<ph.end).length===0){ph.cleared=true;say(`¡PARTE ${i+1} SUPERADA! ${i===3?'Usá E frente al castillo con la llave en inventario.':'Avanzá a la derecha.'}`,4)}if(i<3&&ph.cleared&&hero.x>=ph.end-140)spawnPhase(i+1)}}cam=interior?0:Math.max(0,Math.min(WORLD-540,hero.x-190))}
 function rect(x,y,w,h,color){c.fillStyle=color;c.fillRect(Math.round(x),Math.round(y),w,h)}function label(text,x,y,color='#ffe4ae',font='15px monospace'){c.fillStyle=color;c.font=font;c.fillText(text,x,y)}
-function draw(){rect(0,0,540,960,'#142b29');if(interior){rect(0,65,540,895,'#292e31');for(let i=0;i<540;i+=80){rect(i,110,3,850,'#424449');rect(i,340,80,5,'#555052')}rect(0,780,540,180,'#55504b');for(let i=0;i<540;i+=64)rect(i,875,60,2,'#72695b');for(let x of [120,450,800]){rect(x,185,18,185,'#57504b');rect(x-16,180,50,13,'#9d8a67');rect(x-8,155,33,25,'#e99b42')}label('INTERIOR DEL CASTILLO',105,120,'#e7c18a','23px Georgia')}else{drawPanorama()}
+function draw(){rect(0,0,540,960,'#142b29');if(interior){rect(0,65,540,895,'#292e31');for(let i=0;i<540;i+=80){rect(i,110,3,850,'#424449');rect(i,340,80,5,'#555052')}rect(0,780,540,180,'#55504b');for(let i=0;i<540;i+=64)rect(i,875,60,2,'#72695b');for(let x of [120,450,800]){rect(x,185,18,185,'#57504b');rect(x-16,180,50,13,'#9d8a67');rect(x-8,155,33,25,'#e99b42')}label(tr('INTERIOR DEL CASTILLO'),105,120,'#e7c18a','23px Georgia')}else{drawPanorama()}
 
 for(const d of drops){if(d.taken)continue;const x=d.x-cam,y=d.y-78;if(x<-45||x>585)continue;drawItemArt(d.type,x-31,y-28,62,62)}
 for(const e of enemies){
@@ -306,7 +379,7 @@ for(const e of enemies){
   c.globalAlpha=e.inv>0&&Math.floor(performance.now()/85)%2===0?.55:1;
   c.drawImage(frame,e.type==='hooligan'?-w*.46:-w/2,-h,w,h);c.restore();
  }
- if(e.type==='boss')label('JEFE',x-22,e.y-172,'#ffce94','13px monospace');
+ if(e.type==='boss')label(tr('JEFE'),x-22,e.y-172,'#ffce94','13px monospace');
  rect(x-22,e.y-158,44,5,'#41201e');rect(x-22,e.y-158,44*e.hp/e.max,5,'#d45d4c');
 }
 for(const q of projectiles){const x=q.x-cam;if(x<0||x>540)continue;c.save();c.translate(x,q.y);c.rotate(q.vx>0?.15:3.0);rect(-15,-3,27,6,'#d8e4df');rect(-18,-5,9,10,'#78543b');c.restore()}
@@ -320,7 +393,7 @@ c.restore()}if(hero.blocking&&hero.defenseSlot==='shield'){
   drawItemArt('shield',sx,sy,42,68);
  }if(document.querySelector('#hitboxes').checked){c.lineWidth=2;c.strokeStyle='#5aff9d';c.strokeRect(px-22,hero.y-75,44,75);if(hero.blocking){c.strokeStyle='#80c9fa';c.strokeRect(px+(hero.face>0?5:-34),hero.y-84,29,66)}c.strokeStyle='#ffcf58';for(const e of enemies)if(!e.dead)c.strokeRect(e.x-cam-24,e.y-100,48,100);if(['punch','kick','sword','motosierra'].includes(hero.state)){const reach=hero.state==='punch'?88:hero.state==='kick'?112:hero.state==='motosierra'?155:145;c.strokeStyle='#ff5e6c';c.strokeRect(px+(hero.face>0?5:-reach),hero.y-76,reach-5,85)}}
 rect(0,0,540,84,'rgba(6,22,20,.93)');
-label(`COSWIG · ${interior?'CASTILLO':`PARTE ${Math.min(4,Math.floor(hero.x/SEG)+1)}/4`}`,12,18,'#ffe4ae','15px monospace');
+label(`OLD EVIL · ${interior?tr('CASTILLO'):`${tr('PARTE')} ${Math.min(4,Math.floor(hero.x/SEG)+1)}/4`}`,12,18,'#ffe4ae','15px monospace');
 // Corazones agrupados en dos filas para evitar superposiciones en el televisor.
 for(let i=0;i<MAX_HP;i++)label(i<hero.hp?'♥':'♡',12+(i%6)*28,42+Math.floor(i/6)*20,i<hero.hp?'#ff938c':'#a98f8e','22px monospace');
 // HUD gráfico: cada objeto utiliza exactamente el sprite de la pintura.
@@ -329,7 +402,7 @@ if(hero.beers>0){drawItemArt('beer',403,7,42,45);label('×'+hero.beers,449,34,'#
 if(hero.defenseSlot==='shield'){drawItemArt('shield',215,41,41,41);label('W',252,68,'#f6d88b','12px monospace')}
 if(hero.attackSlot==='chainsaw'){drawItemArt('chainsaw',294,43,53,34);label('D',349,68,'#f6d88b','12px monospace')}
 if(hero.uniqueSlot){drawItemArt(hero.uniqueSlot,407,46,47,34);label('R2',456,69,'#f6d88b','12px monospace')}
-if(!interior){for(let i=0;i<4;i++){rect(i*135,85,133,5,phases[i].cleared?'#80c7a0':phases[i].spawned?'#f0c46d':'#4b5c54')}}drawAcquired();if(hero.state==='death'&&hero.frame===anims.death[0]-1){rect(68,385,404,88,'rgba(7,15,17,.78)');label('DERROTA',175,433,'#ff9691','bold 39px monospace');label('PRESIONÁ REINICIAR',115,464,'#ffe4ae','18px monospace')}}
+if(!interior){for(let i=0;i<4;i++){rect(i*135,85,133,5,phases[i].cleared?'#80c7a0':phases[i].spawned?'#f0c46d':'#4b5c54')}}drawAcquired();if(hero.state==='death'&&hero.frame===anims.death[0]-1){rect(68,385,404,88,'rgba(7,15,17,.78)');label(tr('DERROTA'),175,433,'#ff9691','bold 39px monospace');label(tr('PRESIONÁ REINICIAR'),115,464,'#ffe4ae','18px monospace')}}
 // V11: render configurable. 30 FPS estables para Pi; ?fps=60 en equipos potentes.
 const requestedFPS=Number(new URLSearchParams(location.search).get('fps'));
 const targetFPS=[30,60].includes(requestedFPS)?requestedFPS:30;
@@ -354,12 +427,24 @@ const startEl=document.getElementById('startScreen');
 const statusEl=document.getElementById('pairStatus');
 
 // V18: tutorial auto-animado y navegable que NO interrumpe el WebSocket ni el QR.
-const tutorialSteps=[
+const tutorialStepsByLang={
+ en:[
+ {title:'01 · CONNECT TO WI-FI',description:'Connect to the recommended Wi-Fi network before playing.'},
+ {title:'02 · SCAN THE QR CODE',description:'Open your phone camera and scan the QR code below.'},
+ {title:'03 · YOUR PHONE IS THE CONTROLLER',description:'Your phone becomes a controller with a joystick and buttons. Press START to play.'},
+ {title:'04 · FIND AND EQUIP ITEMS',description:'Scan images in the artwork to collect items. Press SELECT to equip what you find.'}],
+ es:[
  {title:'01 · CONECTÁ TU CELULAR',description:'Conectate a internet. Para jugar, usá preferentemente la red Wi-Fi indicada en la instalación.'},
  {title:'02 · ESCANEÁ EL QR',description:'Abrí la cámara del celular, apuntá al QR de abajo y entrá al enlace de conexión.'},
  {title:'03 · TU CELULAR ES EL CONTROL',description:'La página que se abre transforma tu teléfono en el joystick y los botones del juego. Presioná START para comenzar.'},
- {title:'04 · ENCONTRÁ Y EQUIPÁ OBJETOS',description:'Escaneá las imágenes de la pintura para recolectar objetos. Usá SELECT en el mando para elegir y equipar los que hayas descubierto.'}
-];
+ {title:'04 · ENCONTRÁ Y EQUIPÁ OBJETOS',description:'Escaneá las imágenes de la pintura para recolectar objetos. Usá SELECT en el mando para elegir y equipar los que hayas descubierto.'}],
+ de:[
+ {title:'01 · VERBIND MIT WLAN',description:'Verbinde dich vor dem Spielen mit dem empfohlenen WLAN.'},
+ {title:'02 · QR-CODE SCANNEN',description:'Öffne die Handykamera und scanne den QR-Code unten.'},
+ {title:'03 · DEIN HANDY IST DER CONTROLLER',description:'Dein Handy wird zum Controller mit Joystick und Tasten. Drücke START.'},
+ {title:'04 · OBJEKTE FINDEN UND AUSRÜSTEN',description:'Scanne Bilder im Kunstwerk, um Objekte zu sammeln. Drücke SELECT zum Ausrüsten.'}]
+};
+const tutorialSteps=tutorialStepsByLang.en;
 let tutorialIndex=0,tutorialPlaying=true;
 const tutorialButtons=Array.from(document.querySelectorAll('[data-tutorial-step]'));
 const tutorialSlides=Array.from(document.querySelectorAll('[data-illustration]'));
@@ -369,15 +454,15 @@ function updateRecommendedWifi(ssid){
  recommendedWifi=String(ssid||'').trim().slice(0,80);
  const el=document.getElementById('introWifiName');
  el.hidden=!(recommendedWifi&&tutorialIndex===0);
- el.textContent=recommendedWifi?'RED RECOMENDADA: '+recommendedWifi:'';
+ el.textContent=recommendedWifi?tr('RED RECOMENDADA: ')+recommendedWifi:'';
 }
 function renderTutorialStep(i){
  tutorialIndex=(i+tutorialSteps.length)%tutorialSteps.length;
  tutorialSlides.forEach((slide,j)=>slide.classList.toggle('active',j===tutorialIndex));
  tutorialButtons.forEach((btn,j)=>{btn.classList.toggle('active',j===tutorialIndex);btn.setAttribute('aria-pressed',String(j===tutorialIndex));});
  document.getElementById('introStepCount').textContent=String(tutorialIndex+1).padStart(2,'0')+' / 04';
- document.getElementById('introStepTitle').textContent=tutorialSteps[tutorialIndex].title;
- document.getElementById('introStepDescription').textContent=tutorialSteps[tutorialIndex].description;
+ document.getElementById('introStepTitle').textContent=tutorialStepsByLang[currentLanguage][tutorialIndex].title;
+ document.getElementById('introStepDescription').textContent=tutorialStepsByLang[currentLanguage][tutorialIndex].description;
  updateRecommendedWifi(recommendedWifi);
 }
 function setTutorialPlaying(on){tutorialPlaying=on;tutorialToggle.textContent=on?'Ⅱ':'▶';tutorialToggle.setAttribute('aria-label',on?'Pausar tutorial':'Reanudar tutorial')}
@@ -385,12 +470,12 @@ tutorialButtons.forEach((button,i)=>button.addEventListener('click',()=>{renderT
 tutorialToggle.addEventListener('click',()=>setTutorialPlaying(!tutorialPlaying));
 // El intervalo se limita a la pantalla inicial; no afecta la partida ni la pausa.
 setInterval(()=>{if(tutorialPlaying&&startEl.style.display!=='none'&&!document.hidden)renderTutorialStep(tutorialIndex+1)},4700);
-// Se puede especificar ?wifi=NombreDeRed, o configurar COSWIG_WIFI_SSID en el servidor.
+// Se puede especificar ?wifi=NombreDeRed, o configurar THE OLD EVIL_WIFI_SSID en el servidor.
 updateRecommendedWifi(new URLSearchParams(location.search).get('wifi'));
 
 function sendPhoneState(){
  if(remoteSocket?.readyState!==WebSocket.OPEN||!phoneConnected)return;
- remoteSocket.send(JSON.stringify({type:'host_state',started:gameStarted,paused:gamePaused,attack:hero.attackSlot,defense:hero.defenseSlot,unique:hero.uniqueSlot,owned:[...hero.owned],beers:hero.beers,hp:hero.hp}));
+ remoteSocket.send(JSON.stringify({type:'host_state',started:gameStarted,paused:gamePaused,attack:hero.attackSlot,defense:hero.defenseSlot,unique:hero.uniqueSlot,owned:[...hero.owned],beers:hero.beers,hp:hero.hp,language:currentLanguage}));
 }
 function phoneStart(){
  if(!phoneConnected)return;
@@ -419,11 +504,11 @@ function connectRemote(){
     document.getElementById('pairQR').src=msg.qr;
     document.getElementById('pairQR').style.display='block';
 
-    statusEl.textContent='Esperando a que escanees el QR con el celular…';
+    statusEl.textContent=tr('Esperando a que escanees el QR con el celular…');
   }
   if(msg.type==='controller_status'){
     phoneConnected=!!msg.connected;
-    statusEl.textContent=phoneConnected?'✓ Celular conectado. Presioná START para jugar.':'Celular desconectado. Escaneá el QR para reconectar.';
+    statusEl.textContent=phoneConnected?tr('✓ Celular conectado. Presioná START para jugar.'):tr('Celular desconectado. Escaneá el QR para reconectar.');
     statusEl.classList.toggle('connected',phoneConnected);
     if(phoneConnected)sendPhoneState();
     if(!phoneConnected)clearRemoteHold();
@@ -440,6 +525,7 @@ function connectRemote(){
         else{remoteHold.block=true;syncRemoteHold();action('defend')}
       }else if(['punch','kick','sword','unique','cerveza','interact'].includes(a))action(a);
       else if(a==='restart'){restartGame()}
+      else if(a==='language'){setLanguage(msg.value||msg.lang||'en')}
       else if(a==='start')phoneStart();
     }else if(msg.kind==='equip'&&['sword','shield','chainsaw','book','lantern','hedgehog','emblem','red'].includes(a)){toggleEquip(a,msg.slot==='unique'?'unique':null);sendPhoneState();}
     else if(msg.kind==='modal'){gamePaused=!!msg.open;clearRemoteHold();sendPhoneState();}
@@ -447,10 +533,10 @@ function connectRemote(){
  });
  remoteSocket.addEventListener('close',()=>{
    phoneConnected=false;clearRemoteHold();
-   statusEl.textContent='Se perdió la conexión. Reconectando…';
+   statusEl.textContent=tr('Se perdió la conexión. Reconectando…');
    setTimeout(connectRemote,1500);
  });
- remoteSocket.addEventListener('error',()=>statusEl.textContent='No se pudo conectar. Iniciá el juego usando npm start.');
+ remoteSocket.addEventListener('error',()=>statusEl.textContent=tr('No se pudo conectar. Iniciá el juego usando npm start.'));
 }
 
 connectRemote();
@@ -464,10 +550,13 @@ function restartGame(){
 // Menú de pausa visible en pantalla, con restart también accesible en el celular.
 const pauseEl=document.createElement('div');pauseEl.id='pauseOverlay';
 pauseEl.style.cssText='display:none;position:fixed;inset:0;z-index:88;background:rgba(4,18,14,.88);color:#ffe6aa;align-items:center;justify-content:center;text-align:center;font:bold 24px monospace;padding:30px';
-pauseEl.innerHTML='<section style="border:2px solid #bea776;background:#112d24;padding:30px;max-width:430px;width:100%;display:flex;flex-direction:column;align-items:center;gap:20px"><strong>PAUSA</strong><button id="pauseResume" type="button" style="font:bold 18px monospace;background:#274a37;color:#ffe6aa;border:2px solid #bea776;padding:13px 20px;width:100%;cursor:pointer">CONTINUAR</button><button id="pauseRestart" type="button" style="font:bold 18px monospace;background:#46302a;color:#ffe6aa;border:2px solid #bea776;padding:13px 20px;width:100%;cursor:pointer">RESTART</button><small style="font:13px monospace">START para continuar · RESTART vuelve al comienzo</small></section>';
+pauseEl.innerHTML='<section style="border:2px solid #bea776;background:#112d24;padding:30px;max-width:430px;width:100%;display:flex;flex-direction:column;align-items:center;gap:20px"><strong id="pauseHeading">PAUSED</strong><button id="pauseResume" type="button" style="font:bold 18px monospace;background:#274a37;color:#ffe6aa;border:2px solid #bea776;padding:13px 20px;width:100%;cursor:pointer">RESUME</button><button id="pauseRestart" type="button" style="font:bold 18px monospace;background:#46302a;color:#ffe6aa;border:2px solid #bea776;padding:13px 20px;width:100%;cursor:pointer">RESTART</button><label class="lang-picker">LANGUAGE / IDIOMA / SPRACHE<select id="hostLanguage" aria-label="Language"><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option></select></label><small style="font:13px monospace">START to resume · RESTART begins again</small></section>';
 document.body.appendChild(pauseEl);
 document.getElementById('pauseRestart').addEventListener('click',restartGame);
+function renderPauseLanguage(){const select=document.getElementById('hostLanguage');if(select)select.value=currentLanguage;}
+document.getElementById('hostLanguage').addEventListener('change',e=>setLanguage(e.target.value));
 document.getElementById('pauseResume').addEventListener('click',()=>{gamePaused=false;last=performance.now();sendPhoneState()});
+setLanguage('en');
 setInterval(()=>{pauseEl.style.display=gameStarted&&gamePaused?'flex':'none';sendPhoneState()},850);
 // Salida reservada al operador con mouse: invisible para touch y el mando.
 // Nota: window.close() solo funciona si la ventana fue abierta por script o

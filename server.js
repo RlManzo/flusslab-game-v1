@@ -41,7 +41,7 @@ const SECURE=!!(tlsKey&&tlsCert);
 const server=(SECURE?https.createServer({key:fs.readFileSync(tlsKey),cert:fs.readFileSync(tlsCert)}):http.createServer)((req,res)=>{
  const url=new URL(req.url,'http://localhost');
  let pathname;try{pathname=decodeURIComponent(url.pathname)}catch{res.writeHead(400);return res.end('Bad request')}
- if(pathname==='/health'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({status:'ok',service:'coswig-v8'}))}
+ if(pathname==='/health'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});return res.end(JSON.stringify({status:'ok',service:'the-old-evil-v19'}))}
  const relative=pathname==='/'?'index.html':pathname==='/controller'?'controller.html':pathname.slice(1);
  const file=path.resolve(ROOT,relative);
  if(!file.startsWith(ROOT+path.sep)||relative.includes('\0')){res.writeHead(403);return res.end('Forbidden')}
@@ -82,11 +82,11 @@ wss.on('connection',ws=>{
     const a=String(m.action||'');
     const valid={
       hold:['left','right','crouch','block'],
-      press:['jump','defend','punch','kick','sword','unique','cerveza','interact','restart','start'],
+      press:['jump','defend','punch','kick','sword','unique','cerveza','interact','restart','start','language'],
       equip:['sword','shield','chainsaw','book','lantern','hedgehog','emblem','red']
     };
     if(!valid[m.kind].includes(a))return;
-    send(room.host,{type:'input',kind:m.kind,action:a,pressed:m.kind==='hold'?m.pressed===true:undefined,slot:m.kind==='equip'&&m.slot==='unique'?'unique':undefined});
+    send(room.host,{type:'input',kind:m.kind,action:a,pressed:m.kind==='hold'?m.pressed===true:undefined,slot:m.kind==='equip'&&m.slot==='unique'?'unique':undefined,value:a==='language'&&['en','es','de'].includes(m.value)?m.value:undefined});
    }
   }
  });
@@ -94,7 +94,7 @@ wss.on('connection',ws=>{
   if(!room)return;
   if(role==='host'){
    rooms.delete(room.code);
-   if(room.controller)send(room.controller,{type:'error',message:'Se cerró el juego en la computadora.'});
+   if(room.controller)send(room.controller,{type:'error',message:'Game window closed.'});
    if(room.controller)room.controller.close();
   }else if(role==='controller'&&room.controller===ws){
    room.controller=null;
@@ -104,7 +104,7 @@ wss.on('connection',ws=>{
  });
 });
 server.listen(PORT,'0.0.0.0',()=>{
- console.log(`\nCOSWIG — CONTROL CON CELULAR`);
+ console.log(`\nTHE OLD EVIL — CONTROL CON CELULAR`);
  console.log(`En esta PC: ${SECURE?'https':'http'}://localhost:${PORT}`);
  if(process.env.RENDER!=='true')console.log(`Desde el celular: ${SECURE?'https':'http'}://${lanIP()}:${PORT}/controller`);
  if(process.env.RENDER==='true')console.log('Render: HTTPS/WSS provistos por el proxy. Abrí la URL pública en PC y celular.');
