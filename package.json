@@ -1,8 +1,8 @@
 {
-  "name": "coswig-control-celular",
+  "name": "the-old-evil",
   "version": "9.0.0",
   "private": true,
-  "description": "COSWIG V8 — juego y mando móvil con SELECT/cámara, preparado para Render",
+  "description": "THE OLD EVIL — arcade game and mobile controller",
   "scripts": {
     "start": "node server.js"
   },
