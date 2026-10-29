@@ -9,7 +9,7 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#000;oversc
 #startScreen{max-height:100dvh}
 </style></head><body><div id="startScreen" style="position:fixed;inset:0;background:rgba(4,18,14,.97);z-index:99;display:flex;align-items:center;justify-content:center;overflow:auto;padding:16px"><section style="width:min(94vw,500px);text-align:center;border:2px solid #c4a36b;background:#102a23;padding:22px;color:#f9e4b7"><h1 style="font:32px Georgia">COSWIG</h1><h2 style="font:19px monospace">LOS DOCE APÓSTOLES</h2><p>Conectá tu celular como control antes de comenzar.</p><img id="pairQR" alt="Código QR para vincular celular" style="width:190px;height:190px;background:#fff;padding:9px;display:none;margin:12px auto"><p id="pairStatus">Conectando con el servidor local…</p><p style="font:12px monospace">Escaneá el QR con tu celular y presioná START para comenzar.</p></section></div><main class="wrap"><h1>COSWIG / NIVEL 1 — COMBATE HORIZONTAL</h1><p>Avanzá a izquierda y derecha. Agachate para esquivar los cuchillos del hooligan. Elegí una acción de ataque (espada o motosierra) y una de defensa (esquiva o escudo). La cerveza y la llave se usan aparte.</p><div class="game"><canvas id="game" width="540" height="960"></canvas></div><div class="controls"><button id="left">◀ A</button><button id="right">D ▶</button><button id="up">▲ W</button><button id="down">▼ S</button><button id="punch">👊 J Puño</button><button id="kick">🦶 K Patada</button><button id="sword">⚔ L Ataque</button><button id="dodge">↶ F Defensa</button><button id="interact">E Usar llave</button><button id="restart">Reiniciar</button></div><strong>Inventario — seleccioná objetos para equiparlos (máximo 2)</strong><div id="inventory"></div><label><input id="hitboxes" type="checkbox"> Ver colisiones</label><p><small>WASD: mover, saltar o agacharse · J: puños · K: patada · L: ataque equipado (espada/motosierra) · F: defensa equipada (esquiva/escudo) · B: beber cerveza · E: usar llave frente al castillo · 1–4: seleccionar equipo. Un ataque y una defensa.</small></p></main><script>
 'use strict';const cv=document.querySelector('#game'),c=cv.getContext('2d');c.imageSmoothingEnabled=false;
-const WORLD=7200,SEG=1800,GROUND=778,MAX_HP=12,anims={idle:[4,.28],walk:[6,.28],punch:[8,.28],kick:[8,.28],sword:[8,.28],dodge:[8,.28],shield:[4,.28],motosierra:[8,.384],cerveza:[8,.28]},sprites={},background=[],layerAssets={};
+const WORLD=7200,SEG=1800,GROUND=778,MAX_HP=12,anims={idle:[4,.28],walk:[6,.28],punch:[8,.28],kick:[8,.28],sword:[8,.28],dodge:[8,.28],shield:[4,.28],motosierra:[8,.384],cerveza:[8,.28],hit:[6,.34],death:[12,.325]},sprites={},background=[],layerAssets={};
 for(const [key,[n]] of Object.entries(anims)){sprites[key]=[];for(let i=1;i<=n;i++){const im=new Image();im.src=`sprites/${key}_${String(i).padStart(2,'0')}.png`;sprites[key].push(im)}}const enemyAnims={walk:[],punch:[]};
 // Hooligan: misma máquina de estados, sprites propios y mayor fluidez.
 const hooliganAnims={idle:[],walk:[],punch:[],hit:[]};
@@ -111,6 +111,22 @@ function toggleEquip(name,slot){
  renderInventory();
 }
 function setState(state){if(hero.state===state)return;hero.state=state;hero.frame=0;hero.elapsed=0;if(['punch','kick','sword','motosierra'].includes(state))attackHits=new Set()}
+
+// V15: bboxes reales de los PNG transparentes; evita cambios de escala por el ancho del lienzo.
+const heroPoseBounds={hit:[[18, 12, 222, 329], [16, 9, 224, 329], [23, 38, 214, 329], [26, 16, 214, 329], [31, 10, 209, 329], [17, 11, 220, 329]],death:[[93, 30, 287, 362], [100, 38, 279, 362], [86, 63, 294, 362], [70, 116, 310, 362], [74, 161, 306, 362], [41, 201, 338, 362], [69, 214, 311, 362], [62, 247, 318, 362], [43, 266, 337, 362], [53, 285, 327, 362], [60, 270, 320, 362], [15, 296, 364, 362]]};
+const HERO_FEET_OFFSET=(512-475)*.28; // misma altura respecto del suelo que los sprites V13
+function damageHero(amount,fromX,message){
+ if(hero.inv>0||hero.hp<=0||hero.state==='death')return false;
+ const blocked=hero.blocking&&Math.sign(fromX-hero.x)===hero.face;
+ if(blocked){hero.inv=.30;say('¡El escudo bloqueó el golpe!',1);return false}
+ hero.hp=Math.max(0,hero.hp-amount);hero.inv=.85;hero.blocking=false;hero.crouch=false;
+ hero.comboQueued=false;hero.jumpV=0;hero.jumpHeight=0;
+ setState(hero.hp===0?'death':'hit');
+ if(hero.hp===0){ended=true;say('DERROTA — Presioná Reiniciar.',999)}
+ else say(message||`¡Te golpearon! -${amount} vida.`,1.5);
+ return true;
+}
+
 function action(a){
  if(ended)return;
  if(a==='jump'){if(hero.jumpHeight===0&&hero.jumpV===0&&!hero.blocking){hero.jumpV=410;hero.crouch=false}return}
@@ -141,8 +157,21 @@ function interact(){if(!interior&&hero.x>6860){if(!hero.owned.has('key')){say('N
 window.addEventListener('keydown',e=>{if(e.code.startsWith('Digit')){const n=Number(e.code.slice(-1));if(n>=1&&n<=4&&!e.repeat)toggleEquip(['sword','shield','key','chainsaw'][n-1]);return}const a=keyMap[e.code];if(!a)return;e.preventDefault();if(!keys.has(e.code)){if(a==='defend')action('defend');else if(a in hold)hold[a]=true;else action(a)}keys.add(e.code)});window.addEventListener('keyup',e=>{const a=keyMap[e.code];keys.delete(e.code);if(a==='defend')hold.block=[...keys].some(k=>keyMap[k]==='defend');else if(a in hold)hold[a]=[...keys].some(k=>keyMap[k]===a)});window.addEventListener('blur',()=>{keys.clear();for(const k in hold)hold[k]=false});
 for(const id of ['left','right','up','down','punch','kick','sword','dodge','interact']){const b=document.getElementById(id);b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);if(id==='up')action('jump');else if(id==='down')hold.crouch=true;else if(id==='dodge')action('defend');else if(id in hold)hold[id]=true;else action(id)});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>{if(id==='down')hold.crouch=false;else if(id==='dodge')hold.block=false;else if(id in hold)hold[id]=false})}document.querySelector('#restart').onclick=reset;
 function hitTest(){const state=hero.state;if(!['punch','kick','sword','motosierra'].includes(state))return;const active=state==='motosierra'?[2,3,4,5,6]:state==='punch'?[2,3,4,5,6]:state==='kick'?[3,4,5]:[2,3,4,5,6];if(!active.includes(hero.frame))return;const chain=hero.attackSlot==='chainsaw';const reach=state==='punch'?88:state==='kick'?112:state==='motosierra'?155:chain?135:145;const dmg=state==='punch'?(hero.combo===3?3:1):state==='kick'?2:state==='motosierra'?6:chain?5:3;for(const e of enemies){if(e.dead||attackHits.has(e.id)||e.inv>0)continue;const dx=e.x-hero.x;if(dx*hero.face>4&&dx*hero.face<reach&&Math.abs(e.y-hero.y)<44){e.hp-=dmg;e.stun=e.type==='boss'?.17:.35;e.inv=.20;if(e.type==='hooligan'){e.anim='hit';e.animFrame=0;e.animTime=0;e.throwPending=null}e.x+=hero.face*(e.type==='boss'?7:22);attackHits.add(e.id);if(e.hp<=0){e.dead=true;if(e.drop){drops.push({x:e.x,y:e.y,type:e.drop,taken:false});if(e.extraDrop)drops.push({x:e.x+24,y:e.y,type:e.extraDrop,taken:false});say(`¡Objeto encontrado: ${e.drop==='beer'?'CERVEZA':itemNames[e.drop]}! Pasá por encima para recogerlo.`,4)}if(e.type==='boss'){ended=true;say('¡JEFE DERROTADO! NIVEL 1 COMPLETADO.',999)}else say('¡Enemigo derrotado!')}else say(`Impacto ${dmg} · ${e.type==='boss'?'JEFE':e.type==='chainsaw'?'MOTOSIERRA':'ENEMIGO'} ${Math.max(0,e.hp)}/${e.max}`,1.1)}}}
-function update(dt){if(!gameStarted||gamePaused||ended)return;hero.inv=Math.max(0,hero.inv-dt);hero.blocking=hold.block&&hero.defenseSlot==='shield'&&hero.jumpHeight===0&&['idle','walk','shield'].includes(hero.state);hero.blockTime=hero.blocking?Math.min(.5,hero.blockTime+dt):0;if(hero.blocking&&hero.state!=='shield')setState('shield');if(!hero.blocking&&hero.state==='shield')setState('idle');hero.comboTime=Math.max(0,hero.comboTime-dt);if(acquiredNotice){acquiredNotice.duration-=dt;if(acquiredNotice.duration<=0)acquiredNotice=acquiredQueue.shift()||null;}const vx=Number(hold.right)-Number(hold.left);hero.y=GROUND;hero.crouch=hold.crouch&&hero.jumpHeight===0;if(hero.jumpV!==0||hero.jumpHeight>0){hero.jumpHeight+=hero.jumpV*dt;hero.jumpV-=1000*dt;if(hero.jumpHeight<=0){hero.jumpHeight=0;hero.jumpV=0}}if(vx&&hero.state!=='dodge'&&!hero.blocking)hero.face=Math.sign(vx);if(['idle','walk'].includes(hero.state)){if(vx&&!hold.crouch&&!hero.blocking){setState('walk');const next=hero.x+vx*220*dt;let currentPhase=Math.min(3,Math.floor(hero.x/SEG));let limit=interior?510:Math.min(WORLD-45,(currentPhase+1)*SEG-35+(phases[currentPhase].cleared?1500:0));hero.x=Math.max(40,Math.min(limit,next));hero.y=GROUND}else setState('idle')}if(hero.state==='motosierra'){hero.x=Math.max(40,Math.min(interior?510:WORLD-45,hero.x+hero.face*220/ (8/18)*dt))}
-if(hero.state==='dodge'){hero.x=Math.max(40,Math.min(interior?510:WORLD-45,hero.x+hero.dodgeDir*300*dt));hero.inv=.12}hero.elapsed+=dt;let loops=0;while(hero.elapsed>=1/18&&loops++<5){hero.elapsed-=1/18;hero.frame++;if(hero.frame>=anims[hero.state][0]){if(hero.state==='shield'&&hero.blocking)hero.frame=3;else if(['idle','walk'].includes(hero.state))hero.frame=0;else if(hero.state==='punch'&&hero.comboQueued){hero.comboQueued=false;hero.combo=hero.comboTime>0?(hero.combo%3)+1:1;hero.comboTime=.85;hero.frame=0;attackHits=new Set()}else setState(vx&&!hold.crouch?'walk':'idle')}}hitTest();for(const d of drops){if(!d.taken&&Math.abs(d.x-hero.x)<34){d.taken=true;if(d.type==='beer'){hero.beers++;announceItem('beer')}else{hero.owned.add(d.type);announceItem(d.type)}renderInventory()}}for(const e of enemies){if(e.dead)continue;e.stun=Math.max(0,e.stun-dt);e.inv=Math.max(0,e.inv-dt);e.attack=Math.max(0,e.attack-dt);
+function update(dt){if(!gameStarted||gamePaused||(ended&&hero.state!=='death'))return;if(hero.state==='death'){hero.elapsed+=dt;while(hero.elapsed>=1/11&&hero.frame<anims.death[0]-1){hero.elapsed-=1/11;hero.frame++}return;}hero.inv=Math.max(0,hero.inv-dt);hero.blocking=hold.block&&hero.defenseSlot==='shield'&&hero.jumpHeight===0&&['idle','walk','shield'].includes(hero.state);hero.blockTime=hero.blocking?Math.min(.5,hero.blockTime+dt):0;if(hero.blocking&&hero.state!=='shield')setState('shield');if(!hero.blocking&&hero.state==='shield')setState('idle');hero.comboTime=Math.max(0,hero.comboTime-dt);if(acquiredNotice){acquiredNotice.duration-=dt;if(acquiredNotice.duration<=0)acquiredNotice=acquiredQueue.shift()||null;}const vx=Number(hold.right)-Number(hold.left);hero.y=GROUND;hero.crouch=hold.crouch&&hero.jumpHeight===0;if(hero.jumpV!==0||hero.jumpHeight>0){hero.jumpHeight+=hero.jumpV*dt;hero.jumpV-=1000*dt;if(hero.jumpHeight<=0){hero.jumpHeight=0;hero.jumpV=0}}if(vx&&hero.state!=='dodge'&&!hero.blocking&&!['hit','death'].includes(hero.state))hero.face=Math.sign(vx);if(['idle','walk'].includes(hero.state)){if(vx&&!hold.crouch&&!hero.blocking){setState('walk');const next=hero.x+vx*220*dt;let currentPhase=Math.min(3,Math.floor(hero.x/SEG));let limit=interior?510:Math.min(WORLD-45,(currentPhase+1)*SEG-35+(phases[currentPhase].cleared?1500:0));hero.x=Math.max(40,Math.min(limit,next));hero.y=GROUND}else setState('idle')}if(hero.state==='motosierra'){hero.x=Math.max(40,Math.min(interior?510:WORLD-45,hero.x+hero.face*220/ (8/18)*dt))}
+if(hero.state==='dodge'){hero.x=Math.max(40,Math.min(interior?510:WORLD-45,hero.x+hero.dodgeDir*300*dt));hero.inv=.12}hero.elapsed+=dt;let loops=0;
+const heroFPS=hero.state==='hit'?10:hero.state==='death'?11:18;
+while(hero.elapsed>=1/heroFPS&&loops++<5){
+ hero.elapsed-=1/heroFPS;
+ if(hero.state==='death'&&hero.frame===anims.death[0]-1)break;
+ hero.frame++;
+ if(hero.frame>=anims[hero.state][0]){
+  if(hero.state==='shield'&&hero.blocking)hero.frame=3;
+  else if(hero.state==='death')hero.frame=anims.death[0]-1;
+  else if(['idle','walk'].includes(hero.state))hero.frame=0;
+  else if(hero.state==='punch'&&hero.comboQueued){hero.comboQueued=false;hero.combo=hero.comboTime>0?(hero.combo%3)+1:1;hero.comboTime=.85;hero.frame=0;attackHits=new Set()}
+  else setState(vx&&!hold.crouch?'walk':'idle');
+ }
+}hitTest();for(const d of drops){if(!d.taken&&Math.abs(d.x-hero.x)<34){d.taken=true;if(d.type==='beer'){hero.beers++;announceItem('beer')}else{hero.owned.add(d.type);announceItem(d.type)}renderInventory()}}for(const e of enemies){if(e.dead)continue;e.stun=Math.max(0,e.stun-dt);e.inv=Math.max(0,e.inv-dt);e.attack=Math.max(0,e.attack-dt);
 e.animTime=(e.animTime||0)+dt;
 const isHooligan=e.type==='hooligan';
 const animCount=isHooligan?({idle:4,walk:7,punch:5,hit:4}[e.anim]||7):(e.anim==='punch'?8:6);
@@ -166,14 +195,20 @@ const dx=hero.x-e.x,dy=hero.y-e.y;e.face=e.type==='boss'?Math.sign(dx)||-1:-1;if
  // Tiradores: se acercan siempre al heroe, incluso despues de lanzar.
  // No retroceden ni se detienen a distancia de lanzamiento.
  if(dx < -48)e.x-=Math.min(-dx-48,65*dt);
-}e.y=GROUND;if(e.role==='melee'&&Math.abs(dx)<60&&e.attack<=0&&hero.inv<=0&&hero.jumpHeight<38){const protectedNow=hero.blocking&&e.face===-hero.face;const damage=protectedNow?0:e.type==='boss'?3:e.type==='chainsaw'?2:1;if(damage){hero.hp=Math.max(0,hero.hp-damage);hero.inv=.85;say(`¡Te golpearon! -${damage} vida.`,1.6)}else{hero.inv=.3;say('¡El escudo bloqueó el golpe!',1.1)}e.attack=e.type==='boss'?.8:1.1;e.anim='punch';e.animFrame=0;e.animTime=0}
+}e.y=GROUND;if((e.role==='melee'||e.type==='hooligan')&&Math.abs(dx)<60&&e.attack<=0&&hero.inv<=0&&hero.jumpHeight<38&&hero.hp>0){
+ const damage=e.type==='boss'?3:e.type==='chainsaw'?2:1;
+ damageHero(damage,e.x,`¡Te golpearon! -${damage} vida.`);
+ e.attack=e.type==='boss'?.8:e.type==='hooligan'?1.3:1.1;
+ e.anim='punch';e.animFrame=0;e.animTime=0;
+ if(e.type==='hooligan')e.throwPending=null;
+}
 e.shot-=dt;
 if(e.role==='knife'&&e.shot<=0&&dx<0&&dx>-480&&e.anim!=='punch'&&e.anim!=='hit'){
  e.throwPending=e.role;e.anim='punch';e.animFrame=0;e.animTime=0;
  e.shot=2.1+Math.random()*.8;
-}}}for(const q of projectiles){q.x+=q.vx*dt;q.life-=dt;if(q.life>0&&Math.abs(q.x-hero.x)<24&&hero.inv<=0){const vulnerable=hero.blocking||(!hero.crouch&&hero.jumpHeight<65);if(vulnerable){const blocked=hero.blocking&&Math.sign(q.vx)===-hero.face;if(!blocked){hero.hp=Math.max(0,hero.hp-q.damage);hero.inv=.85;say('¡Te alcanzó un cuchillo!',1.4)}else say('¡Escudo: proyectil bloqueado!',1);q.life=0}}}
+}}}for(const q of projectiles){q.x+=q.vx*dt;q.life-=dt;if(q.life>0&&Math.abs(q.x-hero.x)<24&&hero.inv<=0){const vulnerable=hero.blocking||(!hero.crouch&&hero.jumpHeight<65);if(vulnerable){const blocked=hero.blocking&&Math.sign(q.vx)===-hero.face;if(!blocked)damageHero(q.damage,q.x,'¡Te alcanzó un cuchillo!');else say('¡Escudo: proyectil bloqueado!',1);q.life=0}}}
 projectiles=projectiles.filter(q=>q.life>0&&Math.abs(q.x-hero.x)<750);
-if(hero.hp<=0){ended=true;say('DERROTA — Presioná Reiniciar.',999)}if(interior){if(castleWave===1&&enemies.every(e=>e.dead)){castleWave=2;enemies=[spawn(420,'boss',GROUND)];bossSpawned=true;say('¡APARECE EL JEFE DEL NIVEL! Combiná puños, patadas y armas.',6)}}else{for(let i=0;i<4;i++){let ph=phases[i];if(ph.spawned&&!ph.cleared&&enemies.filter(e=>!e.dead&&e.x>=ph.start&&e.x<ph.end).length===0){ph.cleared=true;say(`¡PARTE ${i+1} SUPERADA! ${i===3?'Usá E frente al castillo con la llave en inventario.':'Avanzá a la derecha.'}`,4)}if(i<3&&ph.cleared&&hero.x>=ph.end-140)spawnPhase(i+1)}}cam=interior?0:Math.max(0,Math.min(WORLD-540,hero.x-190))}
+if(interior){if(castleWave===1&&enemies.every(e=>e.dead)){castleWave=2;enemies=[spawn(420,'boss',GROUND)];bossSpawned=true;say('¡APARECE EL JEFE DEL NIVEL! Combiná puños, patadas y armas.',6)}}else{for(let i=0;i<4;i++){let ph=phases[i];if(ph.spawned&&!ph.cleared&&enemies.filter(e=>!e.dead&&e.x>=ph.start&&e.x<ph.end).length===0){ph.cleared=true;say(`¡PARTE ${i+1} SUPERADA! ${i===3?'Usá E frente al castillo con la llave en inventario.':'Avanzá a la derecha.'}`,4)}if(i<3&&ph.cleared&&hero.x>=ph.end-140)spawnPhase(i+1)}}cam=interior?0:Math.max(0,Math.min(WORLD-540,hero.x-190))}
 function rect(x,y,w,h,color){c.fillStyle=color;c.fillRect(Math.round(x),Math.round(y),w,h)}function label(text,x,y,color='#ffe4ae',font='15px monospace'){c.fillStyle=color;c.font=font;c.fillText(text,x,y)}
 function draw(){rect(0,0,540,960,'#142b29');if(interior){rect(0,65,540,895,'#292e31');for(let i=0;i<540;i+=80){rect(i,110,3,850,'#424449');rect(i,340,80,5,'#555052')}rect(0,780,540,180,'#55504b');for(let i=0;i<540;i+=64)rect(i,875,60,2,'#72695b');for(let x of [120,450,800]){rect(x,185,18,185,'#57504b');rect(x-16,180,50,13,'#9d8a67');rect(x-8,155,33,25,'#e99b42')}label('INTERIOR DEL CASTILLO',105,120,'#e7c18a','23px Georgia')}else{drawPanorama()}
 
@@ -193,7 +228,12 @@ for(const e of enemies){
  rect(x-22,e.y-158,44,5,'#41201e');rect(x-22,e.y-158,44*e.hp/e.max,5,'#d45d4c');
 }
 for(const q of projectiles){const x=q.x-cam;if(x<0||x>540)continue;c.save();c.translate(x,q.y);c.rotate(q.vx>0?.15:3.0);rect(-15,-3,27,6,'#d8e4df');rect(-18,-5,9,10,'#78543b');c.restore()}
-const px=hero.x-cam,im=sprites[hero.state][hero.frame],scale=anims[hero.state][1];c.fillStyle='rgba(0,0,0,.4)';c.beginPath();c.ellipse(px,hero.y+3,Math.max(15,35-hero.jumpHeight*.12),6,0,0,Math.PI*2);c.fill();if(im?.complete&&im.naturalWidth){c.save();c.translate(Math.round(px),hero.y-hero.jumpHeight);c.scale(hero.face,hero.crouch?.68:1);c.globalAlpha=hero.blocking?1:hero.inv>0&&Math.floor(performance.now()/90)%2===0?.65:1;c.drawImage(im,-im.width*scale/2,-im.height*scale,im.width*scale,im.height*scale);c.restore()}if(hero.blocking&&hero.defenseSlot==='shield'){
+const px=hero.x-cam,im=sprites[hero.state][hero.frame],scale=anims[hero.state][1];c.fillStyle='rgba(0,0,0,.4)';c.beginPath();c.ellipse(px,hero.y+3,Math.max(15,35-hero.jumpHeight*.12),6,0,0,Math.PI*2);c.fill();if(im?.complete&&im.naturalWidth){c.save();c.translate(Math.round(px),hero.y-hero.jumpHeight);c.scale(hero.face,hero.crouch?.68:1);c.globalAlpha=(hero.state==='hit'||hero.state==='death'||hero.blocking)?1:hero.inv>0&&Math.floor(performance.now()/90)%2===0?.65:1;if(hero.state==='hit'||hero.state==='death'){
+ const b=heroPoseBounds[hero.state][hero.frame];
+ const artCenter=(b[0]+b[2])/2;
+ c.drawImage(im,-artCenter*scale,-b[3]*scale-HERO_FEET_OFFSET,im.width*scale,im.height*scale);
+}else c.drawImage(im,-im.width*scale/2,-im.height*scale,im.width*scale,im.height*scale);
+c.restore()}if(hero.blocking&&hero.defenseSlot==='shield'){
   const sx=px+(hero.face>0?8:-49),sy=hero.y-hero.jumpHeight-89;
   drawItemArt('shield',sx,sy,42,68);
  }if(document.querySelector('#hitboxes').checked){c.lineWidth=2;c.strokeStyle='#5aff9d';c.strokeRect(px-22,hero.y-75,44,75);if(hero.blocking){c.strokeStyle='#80c9fa';c.strokeRect(px+(hero.face>0?5:-34),hero.y-84,29,66)}c.strokeStyle='#ffcf58';for(const e of enemies)if(!e.dead)c.strokeRect(e.x-cam-24,e.y-100,48,100);if(['punch','kick','sword','motosierra'].includes(hero.state)){const reach=hero.state==='punch'?88:hero.state==='kick'?112:hero.state==='motosierra'?155:145;c.strokeStyle='#ff5e6c';c.strokeRect(px+(hero.face>0?5:-reach),hero.y-76,reach-5,85)}}
@@ -207,7 +247,7 @@ if(hero.beers>0){drawItemArt('beer',403,7,42,45);label('×'+hero.beers,449,34,'#
 if(hero.defenseSlot==='shield'){drawItemArt('shield',215,41,41,41);label('W',252,68,'#f6d88b','12px monospace')}
 if(hero.attackSlot==='chainsaw'){drawItemArt('chainsaw',294,43,53,34);label('D',349,68,'#f6d88b','12px monospace')}
 if(hero.uniqueSlot){drawItemArt(hero.uniqueSlot,407,46,47,34);label('R2',456,69,'#f6d88b','12px monospace')}
-if(!interior){for(let i=0;i<4;i++){rect(i*135,85,133,5,phases[i].cleared?'#80c7a0':phases[i].spawned?'#f0c46d':'#4b5c54')}}drawAcquired();}
+if(!interior){for(let i=0;i<4;i++){rect(i*135,85,133,5,phases[i].cleared?'#80c7a0':phases[i].spawned?'#f0c46d':'#4b5c54')}}drawAcquired();if(hero.state==='death'&&hero.frame===anims.death[0]-1){rect(68,385,404,88,'rgba(7,15,17,.78)');label('DERROTA',175,433,'#ff9691','bold 39px monospace');label('PRESIONÁ REINICIAR',115,464,'#ffe4ae','18px monospace')}}
 // V11: render configurable. 30 FPS estables para Pi; ?fps=60 en equipos potentes.
 const requestedFPS=Number(new URLSearchParams(location.search).get('fps'));
 const targetFPS=[30,60].includes(requestedFPS)?requestedFPS:30;
