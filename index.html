@@ -74,7 +74,7 @@ function drawAcquired(){
 const guardFrames=Array.from({length:4},(_,i)=>{const im=new Image();im.src=`sprites/shield_guard_${String(i+1).padStart(2,'0')}.png`;return im});const itemNames={sword:'Espada',shield:'Escudo',key:'Llave',chainsaw:'Motosierra'};const inventoryEl=document.querySelector('#inventory');const specialNames={book:'Libro',lantern:'Farol',hedgehog:'Erizo',emblem:'Emblema',red:'Objeto rojo'};
 function say(t,time=3){/* V12: sin mensajes de combate ni textos de ayuda sobre el juego. */}
 function spawn(x,type='basic',y=GROUND){if(type==='basic'){normalEnemyCounter++;if(normalEnemyCounter%3===0)type='hooligan'}let hp=type==='boss'?34:type==='chainsaw'?17:type==='heavy'?7:3;return {id:++enemyCounter,x,y,hp,max:hp,type,stun:0,inv:0,attack:0,face:-1,dead:false,drop:null,triggered:false,shot:1.5+Math.random()*1.2,throwPending:null,anim:'walk',animFrame:0,animTime:0,attackWindup:0,role:type==='hooligan'?'knife':'melee'}}
-function reset(){hero={x:140,y:GROUND,face:1,hp:MAX_HP,state:'idle',frame:0,elapsed:0,inv:0,dodgeDir:0,combo:0,comboTime:0,owned:new Set(['sword']),equipped:['sword'],attackSlot:'sword',defenseSlot:'dodge',uniqueSlot:null,beers:0,swing:0,jumpHeight:0,jumpV:0,crouch:false,blocking:false,blockTime:0};enemies=[];drops=[];projectiles=[];phases=[{start:0,end:1800,count:5,spawned:false,cleared:false},{start:1800,end:3600,count:12,spawned:false,cleared:false,kills:0,shieldGiven:false},{start:3600,end:5400,count:15,spawned:false,cleared:false,midBoss:false},{start:5400,end:7200,count:9,spawned:false,cleared:false}];cam=0;ended=false;interior=false;castleWave=0;bossSpawned=false;enemyCounter=0;normalEnemyCounter=0;attackHits=new Set();acquiredNotice=null;acquiredQueue=[];say('PARTE 1 — Enfrentá la primera oleada. La llave está más adelante.');spawnPhase(0);renderInventory()}
+function reset(){hero={x:140,y:GROUND,face:1,hp:MAX_HP,state:'idle',frame:0,elapsed:0,inv:0,dodgeDir:0,combo:0,comboTime:0,owned:new Set(['sword']),equipped:['sword'],attackSlot:'sword',defenseSlot:'dodge',uniqueSlot:null,beers:0,swing:0,jumpHeight:0,jumpV:0,crouch:false,blocking:false,blockTime:0,hitTime:0};enemies=[];drops=[];projectiles=[];phases=[{start:0,end:1800,count:5,spawned:false,cleared:false},{start:1800,end:3600,count:12,spawned:false,cleared:false,kills:0,shieldGiven:false},{start:3600,end:5400,count:15,spawned:false,cleared:false,midBoss:false},{start:5400,end:7200,count:9,spawned:false,cleared:false}];cam=0;ended=false;interior=false;castleWave=0;bossSpawned=false;enemyCounter=0;normalEnemyCounter=0;attackHits=new Set();acquiredNotice=null;acquiredQueue=[];say('PARTE 1 — Enfrentá la primera oleada. La llave está más adelante.');spawnPhase(0);renderInventory()}
 function spawnPhase(p){let ph=phases[p];if(ph.spawned)return;ph.spawned=true;
 const xs=p===0?[420,680,930,1220,1530]:p===1?[1870,2000,2140,2270,2410,2550,2680,2820,2950,3100,3250,3400]:p===2?[3680,3810,3940,4060,4190,4320,4450,4570,4690,4810,4930,5050,5160,5260,5340]:[5520,5700,5870,6040,6210,6370,6510,6660,6800];
 xs.forEach((x,i)=>{const e=spawn(x,p===2&&i===13?'chainsaw':p===3&&i===8?'heavy':'basic',GROUND);
@@ -119,8 +119,8 @@ function damageHero(amount,fromX,message){
  if(hero.inv>0||hero.hp<=0||hero.state==='death')return false;
  const blocked=hero.blocking&&Math.sign(fromX-hero.x)===hero.face;
  if(blocked){hero.inv=.30;say('¡El escudo bloqueó el golpe!',1);return false}
- hero.hp=Math.max(0,hero.hp-amount);hero.inv=.85;hero.blocking=false;hero.crouch=false;
- hero.comboQueued=false;hero.jumpV=0;hero.jumpHeight=0;
+ hero.hp=Math.max(0,hero.hp-amount);hero.inv=1.10;hero.blocking=false;hero.crouch=false;
+ hero.comboQueued=false;hero.jumpV=0;hero.jumpHeight=0;hero.hitTime=0;
  setState(hero.hp===0?'death':'hit');
  if(hero.hp===0){ended=true;say('DERROTA — Presioná Reiniciar.',999)}
  else say(message||`¡Te golpearon! -${amount} vida.`,1.5);
@@ -155,9 +155,13 @@ function action(a){
 }
 function interact(){if(!interior&&hero.x>6860){if(!hero.owned.has('key')){say('Necesitás encontrar la llave para abrir el castillo.',4);return}if(!phases[3].cleared){say('Derrotá la última oleada antes de entrar.');return}interior=true;hero.x=130;hero.y=GROUND;cam=0;enemies=[];projectiles=[];castleWave=1;for(let i=0;i<6;i++)enemies.push(spawn(240+i*44,i%2?'heavy':'basic'));say('CASTILLO — Derrotá a los guardias. Después aparecerá el jefe.',5);return}say('Los objetos se recogen automáticamente. E abre el castillo.')}
 window.addEventListener('keydown',e=>{if(e.code.startsWith('Digit')){const n=Number(e.code.slice(-1));if(n>=1&&n<=4&&!e.repeat)toggleEquip(['sword','shield','key','chainsaw'][n-1]);return}const a=keyMap[e.code];if(!a)return;e.preventDefault();if(!keys.has(e.code)){if(a==='defend')action('defend');else if(a in hold)hold[a]=true;else action(a)}keys.add(e.code)});window.addEventListener('keyup',e=>{const a=keyMap[e.code];keys.delete(e.code);if(a==='defend')hold.block=[...keys].some(k=>keyMap[k]==='defend');else if(a in hold)hold[a]=[...keys].some(k=>keyMap[k]===a)});window.addEventListener('blur',()=>{keys.clear();for(const k in hold)hold[k]=false});
-for(const id of ['left','right','up','down','punch','kick','sword','dodge','interact']){const b=document.getElementById(id);b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);if(id==='up')action('jump');else if(id==='down')hold.crouch=true;else if(id==='dodge')action('defend');else if(id in hold)hold[id]=true;else action(id)});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>{if(id==='down')hold.crouch=false;else if(id==='dodge')hold.block=false;else if(id in hold)hold[id]=false})}document.querySelector('#restart').onclick=reset;
+for(const id of ['left','right','up','down','punch','kick','sword','dodge','interact']){const b=document.getElementById(id);b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);if(id==='up')action('jump');else if(id==='down')hold.crouch=true;else if(id==='dodge')action('defend');else if(id in hold)hold[id]=true;else action(id)});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>{if(id==='down')hold.crouch=false;else if(id==='dodge')hold.block=false;else if(id in hold)hold[id]=false})}document.querySelector('#restart').onclick=()=>restartGame();
 function hitTest(){const state=hero.state;if(!['punch','kick','sword','motosierra'].includes(state))return;const active=state==='motosierra'?[2,3,4,5,6]:state==='punch'?[2,3,4,5,6]:state==='kick'?[3,4,5]:[2,3,4,5,6];if(!active.includes(hero.frame))return;const chain=hero.attackSlot==='chainsaw';const reach=state==='punch'?88:state==='kick'?112:state==='motosierra'?155:chain?135:145;const dmg=state==='punch'?(hero.combo===3?3:1):state==='kick'?2:state==='motosierra'?6:chain?5:3;for(const e of enemies){if(e.dead||attackHits.has(e.id)||e.inv>0)continue;const dx=e.x-hero.x;if(dx*hero.face>4&&dx*hero.face<reach&&Math.abs(e.y-hero.y)<44){e.hp-=dmg;e.stun=e.type==='boss'?.17:.35;e.inv=.20;if(e.type==='hooligan'){e.anim='hit';e.animFrame=0;e.animTime=0;e.throwPending=null}e.x+=hero.face*(e.type==='boss'?7:22);attackHits.add(e.id);if(e.hp<=0){e.dead=true;if(e.drop){drops.push({x:e.x,y:e.y,type:e.drop,taken:false});if(e.extraDrop)drops.push({x:e.x+24,y:e.y,type:e.extraDrop,taken:false});say(`¡Objeto encontrado: ${e.drop==='beer'?'CERVEZA':itemNames[e.drop]}! Pasá por encima para recogerlo.`,4)}if(e.type==='boss'){ended=true;say('¡JEFE DERROTADO! NIVEL 1 COMPLETADO.',999)}else say('¡Enemigo derrotado!')}else say(`Impacto ${dmg} · ${e.type==='boss'?'JEFE':e.type==='chainsaw'?'MOTOSIERRA':'ENEMIGO'} ${Math.max(0,e.hp)}/${e.max}`,1.1)}}}
-function update(dt){if(!gameStarted||gamePaused||(ended&&hero.state!=='death'))return;if(hero.state==='death'){hero.elapsed+=dt;while(hero.elapsed>=1/11&&hero.frame<anims.death[0]-1){hero.elapsed-=1/11;hero.frame++}return;}hero.inv=Math.max(0,hero.inv-dt);hero.blocking=hold.block&&hero.defenseSlot==='shield'&&hero.jumpHeight===0&&['idle','walk','shield'].includes(hero.state);hero.blockTime=hero.blocking?Math.min(.5,hero.blockTime+dt):0;if(hero.blocking&&hero.state!=='shield')setState('shield');if(!hero.blocking&&hero.state==='shield')setState('idle');hero.comboTime=Math.max(0,hero.comboTime-dt);if(acquiredNotice){acquiredNotice.duration-=dt;if(acquiredNotice.duration<=0)acquiredNotice=acquiredQueue.shift()||null;}const vx=Number(hold.right)-Number(hold.left);hero.y=GROUND;hero.crouch=hold.crouch&&hero.jumpHeight===0;if(hero.jumpV!==0||hero.jumpHeight>0){hero.jumpHeight+=hero.jumpV*dt;hero.jumpV-=1000*dt;if(hero.jumpHeight<=0){hero.jumpHeight=0;hero.jumpV=0}}if(vx&&hero.state!=='dodge'&&!hero.blocking&&!['hit','death'].includes(hero.state))hero.face=Math.sign(vx);if(['idle','walk'].includes(hero.state)){if(vx&&!hold.crouch&&!hero.blocking){setState('walk');const next=hero.x+vx*220*dt;let currentPhase=Math.min(3,Math.floor(hero.x/SEG));let limit=interior?510:Math.min(WORLD-45,(currentPhase+1)*SEG-35+(phases[currentPhase].cleared?1500:0));hero.x=Math.max(40,Math.min(limit,next));hero.y=GROUND}else setState('idle')}if(hero.state==='motosierra'){hero.x=Math.max(40,Math.min(interior?510:WORLD-45,hero.x+hero.face*220/ (8/18)*dt))}
+function update(dt){if(!gameStarted||gamePaused||(ended&&hero.state!=='death'))return;if(hero.state==='death'){hero.elapsed+=dt;while(hero.elapsed>=1/11&&hero.frame<anims.death[0]-1){hero.elapsed-=1/11;hero.frame++}return;}hero.inv=Math.max(0,hero.inv-dt);
+ // V16: el impacto interrumpe el ataque, pero no inmoviliza el stick.
+ // Recuperación de seguridad si el navegador pierde tiempo de animación.
+ if(hero.state==='hit'){hero.hitTime+=dt;if(hero.hitTime>.85)setState((hold.left||hold.right)?'walk':'idle')}else hero.hitTime=0;
+ hero.blocking=hold.block&&hero.defenseSlot==='shield'&&hero.jumpHeight===0&&['idle','walk','shield'].includes(hero.state);hero.blockTime=hero.blocking?Math.min(.5,hero.blockTime+dt):0;if(hero.blocking&&hero.state!=='shield')setState('shield');if(!hero.blocking&&hero.state==='shield')setState('idle');hero.comboTime=Math.max(0,hero.comboTime-dt);if(acquiredNotice){acquiredNotice.duration-=dt;if(acquiredNotice.duration<=0)acquiredNotice=acquiredQueue.shift()||null;}const vx=Number(hold.right)-Number(hold.left);hero.y=GROUND;hero.crouch=hold.crouch&&hero.jumpHeight===0;if(hero.jumpV!==0||hero.jumpHeight>0){hero.jumpHeight+=hero.jumpV*dt;hero.jumpV-=1000*dt;if(hero.jumpHeight<=0){hero.jumpHeight=0;hero.jumpV=0}}if(vx&&hero.state!=='dodge'&&!hero.blocking&&hero.state!=='death')hero.face=Math.sign(vx);if(['idle','walk','hit'].includes(hero.state)){if(vx&&!hold.crouch&&!hero.blocking){if(hero.state!=='hit')setState('walk');const speed=hero.state==='hit'?140:220;const next=hero.x+vx*speed*dt;let currentPhase=Math.min(3,Math.floor(hero.x/SEG));let limit=interior?510:Math.min(WORLD-45,(currentPhase+1)*SEG-35+(phases[currentPhase].cleared?1500:0));hero.x=Math.max(40,Math.min(limit,next));hero.y=GROUND}else if(hero.state!=='hit')setState('idle')}if(hero.state==='motosierra'){hero.x=Math.max(40,Math.min(interior?510:WORLD-45,hero.x+hero.face*220/ (8/18)*dt))}
 if(hero.state==='dodge'){hero.x=Math.max(40,Math.min(interior?510:WORLD-45,hero.x+hero.dodgeDir*300*dt));hero.inv=.12}hero.elapsed+=dt;let loops=0;
 const heroFPS=hero.state==='hit'?10:hero.state==='death'?11:18;
 while(hero.elapsed>=1/heroFPS&&loops++<5){
@@ -319,7 +323,7 @@ function connectRemote(){
         if(hero.defenseSlot==='dodge')action('defend');
         else{remoteHold.block=true;syncRemoteHold();action('defend')}
       }else if(['punch','kick','sword','unique','cerveza','interact'].includes(a))action(a);
-      else if(a==='restart'){reset();sendPhoneState()}
+      else if(a==='restart'){restartGame()}
       else if(a==='start')phoneStart();
     }else if(msg.kind==='equip'&&['sword','shield','chainsaw','book','lantern','hedgehog','emblem','red'].includes(a)){toggleEquip(a,msg.slot==='unique'?'unique':null);sendPhoneState();}
     else if(msg.kind==='modal'){gamePaused=!!msg.open;clearRemoteHold();sendPhoneState();}
@@ -334,9 +338,49 @@ function connectRemote(){
 }
 
 connectRemote();
-// Overlay de pausa para la pantalla principal.
-const pauseEl=document.createElement('div');pauseEl.id='pauseOverlay';pauseEl.textContent='PAUSA · START PARA CONTINUAR';
-pauseEl.style.cssText='display:none;position:fixed;inset:0;z-index:88;background:rgba(4,18,14,.8);color:#ffe6aa;align-items:center;justify-content:center;text-align:center;font:bold 26px monospace;padding:30px';
+// RESTART conserva la vinculación con el celular y vuelve al nivel 1.
+function restartGame(){
+ clearRemoteHold();keys.clear();for(const key in hold)hold[key]=false;
+ reset();gameStarted=true;gamePaused=false;startEl.style.display='none';
+ last=performance.now();nextFrame=0;
+ pauseEl.style.display='none';sendPhoneState();
+}
+// Menú de pausa visible en pantalla, con restart también accesible en el celular.
+const pauseEl=document.createElement('div');pauseEl.id='pauseOverlay';
+pauseEl.style.cssText='display:none;position:fixed;inset:0;z-index:88;background:rgba(4,18,14,.88);color:#ffe6aa;align-items:center;justify-content:center;text-align:center;font:bold 24px monospace;padding:30px';
+pauseEl.innerHTML='<section style="border:2px solid #bea776;background:#112d24;padding:30px;max-width:430px;width:100%;display:flex;flex-direction:column;align-items:center;gap:20px"><strong>PAUSA</strong><button id="pauseResume" type="button" style="font:bold 18px monospace;background:#274a37;color:#ffe6aa;border:2px solid #bea776;padding:13px 20px;width:100%;cursor:pointer">CONTINUAR</button><button id="pauseRestart" type="button" style="font:bold 18px monospace;background:#46302a;color:#ffe6aa;border:2px solid #bea776;padding:13px 20px;width:100%;cursor:pointer">RESTART</button><small style="font:13px monospace">START para continuar · RESTART vuelve al comienzo</small></section>';
 document.body.appendChild(pauseEl);
+document.getElementById('pauseRestart').addEventListener('click',restartGame);
+document.getElementById('pauseResume').addEventListener('click',()=>{gamePaused=false;last=performance.now();sendPhoneState()});
 setInterval(()=>{pauseEl.style.display=gameStarted&&gamePaused?'flex':'none';sendPhoneState()},850);
+// Salida reservada al operador con mouse: invisible para touch y el mando.
+// Nota: window.close() solo funciona si la ventana fue abierta por script o
+// si Chromium admite cierre desde una ventana tipo app/kiosco configurada para ello.
+const operatorExit=document.createElement('div');operatorExit.id='operatorExit';
+operatorExit.style.cssText='position:fixed;right:0;top:0;width:66px;height:66px;z-index:9999;opacity:0;pointer-events:none;transition:opacity .12s ease';
+const operatorButton=document.createElement('button');operatorButton.type='button';operatorButton.textContent='×';operatorButton.setAttribute('aria-label','Cerrar juego (operador)');
+operatorButton.tabIndex=-1;operatorButton.setAttribute('aria-hidden','true');
+operatorButton.style.cssText='position:absolute;top:7px;right:7px;width:46px;height:46px;border-radius:7px;border:1px solid #e0b98e;color:#fff;background:#8b2424;font:bold 32px Arial;cursor:pointer';
+operatorExit.appendChild(operatorButton);document.body.appendChild(operatorExit);
+let mouseOverExit=false;
+function hideOperatorExit(){mouseOverExit=false;operatorExit.style.opacity='0';operatorExit.style.pointerEvents='none'}
+document.addEventListener('pointermove',event=>{
+ if(event.pointerType!=='mouse')return;
+ const over=event.clientX>=innerWidth-66&&event.clientY<=66;
+ if(over!==mouseOverExit){mouseOverExit=over;operatorExit.style.opacity=over?'1':'0';operatorExit.style.pointerEvents=over?'auto':'none'}
+});
+operatorExit.addEventListener('pointerleave',hideOperatorExit);
+operatorButton.addEventListener('pointerdown',event=>{if(event.pointerType!=='mouse')event.preventDefault()});
+operatorButton.addEventListener('click',event=>{if(!mouseOverExit)return;
+ if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
+ window.close();
+ // Si el navegador deniega window.close(), dejar una instrucción solo para operador.
+ setTimeout(()=>{
+  if(document.visibilityState==='visible'){
+   const note=document.createElement('div');note.style.cssText='position:fixed;z-index:10000;right:12px;top:70px;max-width:300px;color:#ffe6aa;background:#14251e;border:1px solid #bea776;padding:14px;font:14px monospace';
+   note.textContent='El navegador impide cerrar esta pestaña por JavaScript. Usá Ctrl+W (o Alt+F4 en modo aplicación).';document.body.appendChild(note);
+   setTimeout(()=>note.remove(),7000);
+  }
+ },250);
+});
 </script><div style="padding:8px 0;color:#f2dfb0;font:12px monospace">L: ESPADA o MOTOSIERRA · F: ESQUIVA o ESCUDO (mantener) · B: CERVEZA (cura 12 corazones) · E: LLAVE frente al castillo. Escudo y motosierra pueden estar equipados simultáneamente.</div><div class="controls" id="new-actions"><button type="button" onclick="action('cerveza')">🍺 Cerveza (B)</button></div></body></html>
