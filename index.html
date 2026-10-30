@@ -192,6 +192,24 @@ for(const [state,count] of Object.entries({walk:6,attack:4,hurt:4,death:6})){
   chainsawEnemyAnims[state].push(image);
  }
 }
+// V30: destello rojo al recibir daño. Se tiñe SOLO la silueta del sprite,
+// sin modificar el PNG ni pintar el escenario detrás del enemigo.
+const enemyHitTintCache=new WeakMap();
+function enemyHitTint(frame){
+ let tinted=enemyHitTintCache.get(frame);
+ if(tinted)return tinted;
+ tinted=document.createElement('canvas');
+ tinted.width=frame.naturalWidth;
+ tinted.height=frame.naturalHeight;
+ const t=tinted.getContext('2d');
+ t.imageSmoothingEnabled=false;
+ t.drawImage(frame,0,0);
+ t.globalCompositeOperation='source-in';
+ t.fillStyle='#ff3030';
+ t.fillRect(0,0,tinted.width,tinted.height);
+ enemyHitTintCache.set(frame,tinted);
+ return tinted;
+}
 // V11: panorama precortado para no subir una textura de 8640px a la GPU cada frame.
 const PANORAMA_TILE_WIDTH=540, panoramaTiles=[];
 for(let i=0;i<16;i++){const im=new Image();im.decoding='async';im.src=`assets/panorama_tiles/tile_${String(i).padStart(2,'0')}.jpg`;panoramaTiles.push(im)}
@@ -227,6 +245,8 @@ function drawItemArt(id,x,y,w,h){
 }
 // V20: cada hallazgo abre una pausa de aprendizaje. A es el botón de puño del mando.
 let acquiredNotice=null,acquiredQueue=[];
+// Una sola explicación por tipo de objeto y por partida (se reinicia con RESTART).
+const seenItemTutorials=new Set();
 const ITEM_GUIDE={
  key:{en:['KEY','L · USE','Opens the castle gate when you reach it.','Always available; no need to equip.'],es:['LLAVE','L · USAR','Abre el castillo al llegar a la puerta.','Siempre disponible; no hace falta equiparla.'],de:['SCHLÜSSEL','L · BENUTZEN','Öffnet das Schlosstor, wenn du dort bist.','Immer verfügbar; nicht ausrüsten.']},
  beer:{en:['BEER','R · DRINK','Restores all 12 hearts.','Always available while you have a beer.'],es:['CERVEZA','R · BEBER','Recupera los 12 corazones.','Disponible mientras tengas cerveza.'],de:['BIER','R · TRINKEN','Stellt alle 12 Herzen wieder her.','Immer verfügbar, solange du Bier hast.']},
@@ -239,6 +259,8 @@ const ITEM_GUIDE={
  red:{en:['RED ITEM','SELECT → R2','Special collectible for the extra slot.','Scan this item in SELECT to equip it.'],es:['OBJETO ROJO','SELECT → R2','Objeto especial para la ranura extra.','Escaneá el objeto en SELECT para equiparlo.'],de:['ROTES OBJEKT','SELECT → R2','Spezialobjekt für den Zusatzplatz.','Scanne das Objekt in SELECT zum Ausrüsten.']}
 };
 function announceItem(id){
+ if(seenItemTutorials.has(id))return false;
+ seenItemTutorials.add(id);
  acquiredQueue.push({id});
  if(!acquiredNotice)acquiredNotice=acquiredQueue.shift();
  // Liberar cualquier dirección sostenida mientras el héroe lee el hallazgo.
@@ -281,8 +303,8 @@ function drawAcquired(){
 
 const guardFrames=Array.from({length:4},(_,i)=>{const im=new Image();im.src=`sprites/shield_guard_${String(i+1).padStart(2,'0')}.png`;return im});const itemNames={sword:'Espada',shield:'Escudo',key:'Llave',chainsaw:'Motosierra'};const inventoryEl=document.querySelector('#inventory');const specialNames={book:'Libro',lantern:'Farol',hedgehog:'Erizo',emblem:'Emblema',red:'Objeto rojo'};
 function say(t,time=3){/* V12: sin mensajes de combate ni textos de ayuda sobre el juego. */}
-function spawn(x,type='basic',y=GROUND){if(type==='basic'){normalEnemyCounter++;if(normalEnemyCounter%3===0)type='hooligan'}let hp=type==='boss'?34:type==='chainsaw'?10:type==='heavy'?7:3;return {id:++enemyCounter,x,y,hp,max:hp,type,stun:0,inv:0,attack:0,face:-1,dead:false,drop:null,triggered:false,shot:1.5+Math.random()*1.2,throwPending:null,anim:'walk',animFrame:0,animTime:0,attackWindup:0,attackPending:false,deathTime:0,dropReleased:false,role:type==='hooligan'?'knife':'melee'}}
-function reset(){halloCooldown=0;halloNearby=false;hero={x:140,y:GROUND,face:1,hp:MAX_HP,state:'idle',frame:0,elapsed:0,inv:0,dodgeDir:0,combo:0,comboTime:0,owned:new Set(['sword']),equipped:['sword'],attackSlot:'sword',defenseSlot:'dodge',uniqueSlot:null,beers:0,swing:0,jumpHeight:0,jumpV:0,crouch:false,blocking:false,blockTime:0,hitTime:0};enemies=[];drops=[];projectiles=[];phases=[{start:0,end:1800,count:5,spawned:false,cleared:false},{start:1800,end:3600,count:12,spawned:false,cleared:false,kills:0,shieldGiven:false},{start:3600,end:5400,count:15,spawned:false,cleared:false,midBoss:false},{start:5400,end:7200,count:9,spawned:false,cleared:false}];cam=0;ended=false;interior=false;castleWave=0;bossSpawned=false;enemyCounter=0;normalEnemyCounter=0;attackHits=new Set();acquiredNotice=null;acquiredQueue=[];say('PARTE 1 — Enfrentá la primera oleada. La llave está más adelante.');spawnPhase(0);renderInventory()}
+function spawn(x,type='basic',y=GROUND){if(type==='basic'){normalEnemyCounter++;if(normalEnemyCounter%3===0)type='hooligan'}let hp=type==='boss'?34:type==='chainsaw'?17:type==='heavy'?7:3;return {id:++enemyCounter,x,y,hp,max:hp,type,stun:0,inv:0,hitFlash:0,attack:0,face:-1,dead:false,drop:null,triggered:false,shot:1.5+Math.random()*1.2,throwPending:null,anim:'walk',animFrame:0,animTime:0,attackWindup:0,attackPending:false,deathTime:0,dropReleased:false,role:type==='hooligan'?'knife':'melee'}}
+function reset(){halloCooldown=0;halloNearby=false;hero={x:140,y:GROUND,face:1,hp:MAX_HP,state:'idle',frame:0,elapsed:0,inv:0,dodgeDir:0,combo:0,comboTime:0,owned:new Set(['sword']),equipped:['sword'],attackSlot:'sword',defenseSlot:'dodge',uniqueSlot:null,beers:0,swing:0,jumpHeight:0,jumpV:0,crouch:false,blocking:false,blockTime:0,hitTime:0};enemies=[];drops=[];projectiles=[];phases=[{start:0,end:1800,count:5,spawned:false,cleared:false},{start:1800,end:3600,count:12,spawned:false,cleared:false,kills:0,shieldGiven:false},{start:3600,end:5400,count:15,spawned:false,cleared:false,midBoss:false},{start:5400,end:7200,count:9,spawned:false,cleared:false}];cam=0;ended=false;interior=false;castleWave=0;bossSpawned=false;enemyCounter=0;normalEnemyCounter=0;attackHits=new Set();acquiredNotice=null;acquiredQueue=[];seenItemTutorials.clear();say('PARTE 1 — Enfrentá la primera oleada. La llave está más adelante.');spawnPhase(0);renderInventory()}
 function spawnPhase(p){let ph=phases[p];if(ph.spawned)return;ph.spawned=true;
 const xs=p===0?[420,680,930,1220,1530]:p===1?[1870,2000,2140,2270,2410,2550,2680,2820,2950,3100,3250,3400]:p===2?[3680,3810,3940,4060,4190,4320,4450,4570,4690,4810,4930,5050,5160,5260,5340]:[5520,5700,5870,6040,6210,6370,6510,6660,6800];
 xs.forEach((x,i)=>{const e=spawn(x,p===2&&i===13?'chainsaw':p===3&&i===8?'heavy':'basic',GROUND);
@@ -331,11 +353,12 @@ const gameAudio={
  music:new Audio('assets/audio/arcade_battle_theme.mp3'),
  attack:new Audio('assets/audio/hero_attack.mp3'),
  hurt:new Audio('assets/audio/hero_hurt.mp3'),
- hallo:new Audio('assets/audio/enemy_hallo.mp3')
+ hallo:new Audio('assets/audio/enemy_hallo.mp3'),
+ pickup:new Audio('assets/audio/item_pickup.wav')
 };
 gameAudio.music.loop=true;gameAudio.music.volume=.22;
 // Voces normalizadas y con silencios iniciales recortados: respuesta inmediata al pulsar.
-gameAudio.attack.volume=1;gameAudio.hurt.volume=1;gameAudio.hallo.volume=.96;
+gameAudio.attack.volume=1;gameAudio.hurt.volume=1;gameAudio.hallo.volume=.96;gameAudio.pickup.volume=.82;
 for(const sound of Object.values(gameAudio))sound.preload='auto';
 // Varias instancias independientes: pulsar A/S/D sucesivamente no silencia el grito.
 const attackVoices=Array.from({length:5},()=>{
@@ -344,6 +367,12 @@ const attackVoices=Array.from({length:5},()=>{
  voice.preload='auto';
  return voice;
 });
+// Pequeño pool para recogidas consecutivas sin cortar la nota anterior.
+const pickupVoices=Array.from({length:4},()=>{
+ const voice=gameAudio.pickup.cloneNode(true);
+ voice.volume=gameAudio.pickup.volume;voice.preload='auto';return voice;
+});
+let pickupVoiceIndex=0;
 let attackVoiceIndex=0;
 let halloCooldown=0;
 let halloNearby=false;
@@ -365,6 +394,12 @@ function playVoice(sound){
 function soundPlay(name){
  if(!soundCanPlay()&&!(name==='hurt'&&gameStarted&&!gamePaused&&!storyPending))return;
  if(audioUnlockRequired)return;
+ if(name==='pickup'){
+  const sound=pickupVoices[pickupVoiceIndex];
+  pickupVoiceIndex=(pickupVoiceIndex+1)%pickupVoices.length;
+  playVoice(sound);
+  return;
+ }
  if(name==='attack'){
   // Cada pulsación tiene su propio inicio, aunque otra voz esté sonando.
   const sound=attackVoices[attackVoiceIndex];
@@ -452,7 +487,7 @@ function action(a){
 function interact(){if(!interior&&hero.x>6860){if(!hero.owned.has('key')){say('Necesitás encontrar la llave para abrir el castillo.',4);return}if(!phases[3].cleared){say('Derrotá la última oleada antes de entrar.');return}interior=true;hero.x=130;hero.y=GROUND;cam=0;enemies=[];projectiles=[];castleWave=1;for(let i=0;i<6;i++)enemies.push(spawn(240+i*44,i%2?'heavy':'basic'));say('CASTILLO — Derrotá a los guardias. Después aparecerá el jefe.',5);return}say('Los objetos se recogen automáticamente. E abre el castillo.')}
 window.addEventListener('keydown',e=>{if(acquiredNotice){if(!e.repeat&&(e.code==='KeyJ'||e.code==='Enter'))continueAfterItem();e.preventDefault();return;}if(e.code.startsWith('Digit')){const n=Number(e.code.slice(-1));if(n>=1&&n<=4&&!e.repeat)toggleEquip(['sword','shield','key','chainsaw'][n-1]);return}const a=keyMap[e.code];if(!a)return;e.preventDefault();if(!keys.has(e.code)){if(a==='defend')action('defend');else if(a in hold)hold[a]=true;else action(a)}keys.add(e.code)});window.addEventListener('keyup',e=>{const a=keyMap[e.code];keys.delete(e.code);if(a==='defend')hold.block=[...keys].some(k=>keyMap[k]==='defend');else if(a in hold)hold[a]=[...keys].some(k=>keyMap[k]===a)});window.addEventListener('blur',()=>{keys.clear();for(const k in hold)hold[k]=false});
 for(const id of ['left','right','up','down','punch','kick','sword','dodge','interact']){const b=document.getElementById(id);b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);if(id==='up')action('jump');else if(id==='down')hold.crouch=true;else if(id==='dodge')action('defend');else if(id in hold)hold[id]=true;else action(id)});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>{if(id==='down')hold.crouch=false;else if(id==='dodge')hold.block=false;else if(id in hold)hold[id]=false})}document.querySelector('#restart').onclick=()=>restartGame();
-function hitTest(){const state=hero.state;if(!['punch','kick','sword','motosierra'].includes(state))return;const active=state==='motosierra'?[2,3,4,5,6]:state==='punch'?[2,3,4,5,6]:state==='kick'?[3,4,5]:[2,3,4,5,6];if(!active.includes(hero.frame))return;const chain=hero.attackSlot==='chainsaw';const reach=state==='punch'?88:state==='kick'?112:state==='motosierra'?155:chain?135:145;const dmg=state==='punch'?(hero.combo===3?3:1):state==='kick'?2:state==='motosierra'?6:chain?5:3;for(const e of enemies){if(e.dead||attackHits.has(e.id)||e.inv>0)continue;const dx=e.x-hero.x;if(dx*hero.face>4&&dx*hero.face<reach&&Math.abs(e.y-hero.y)<44){e.hp-=dmg;e.stun=e.type==='boss'?.17:e.type==='chainsaw'?.24:.35;e.inv=.20;
+function hitTest(){const state=hero.state;if(!['punch','kick','sword','motosierra'].includes(state))return;const active=state==='motosierra'?[2,3,4,5,6]:state==='punch'?[2,3,4,5,6]:state==='kick'?[3,4,5]:[2,3,4,5,6];if(!active.includes(hero.frame))return;const chain=hero.attackSlot==='chainsaw';const reach=state==='punch'?88:state==='kick'?112:state==='motosierra'?155:chain?135:145;const dmg=state==='punch'?(hero.combo===3?3:1):state==='kick'?2:state==='motosierra'?6:chain?5:3;for(const e of enemies){if(e.dead||attackHits.has(e.id)||e.inv>0)continue;const dx=e.x-hero.x;if(dx*hero.face>4&&dx*hero.face<reach&&Math.abs(e.y-hero.y)<44){e.hp-=dmg;e.stun=e.type==='boss'?.17:e.type==='chainsaw'?.24:.35;e.inv=.20;e.hitFlash=.26;
 if(e.type==='hooligan'){e.anim='hit';e.animFrame=0;e.animTime=0;e.throwPending=null}
 if(e.type==='chainsaw'){e.anim='hurt';e.animFrame=0;e.animTime=0;e.attackPending=false}e.x+=hero.face*(e.type==='boss'?7:22);attackHits.add(e.id);if(e.hp<=0){e.dead=true;
  // El nuevo villano completa su caída antes de soltar la motosierra.
@@ -481,7 +516,11 @@ while(hero.elapsed>=1/heroFPS&&loops++<5){
   else if(hero.state==='punch'&&hero.comboQueued){hero.comboQueued=false;hero.combo=hero.comboTime>0?(hero.combo%3)+1:1;hero.comboTime=.85;hero.frame=0;attackHits=new Set()}
   else setState(vx&&!hold.crouch?'walk':'idle');
  }
-}hitTest();for(const d of drops){if(!d.taken&&Math.abs(d.x-hero.x)<34){d.taken=true;if(d.type==='beer'){hero.beers++;announceItem('beer')}else{hero.owned.add(d.type);announceItem(d.type)}renderInventory();if(acquiredNotice){cam=interior?0:Math.max(0,Math.min(WORLD-540,hero.x-190));return;}}}// Un "Hallo" al comenzar el acercamiento y luego cada 5 s
+}hitTest();for(const d of drops){if(!d.taken&&Math.abs(d.x-hero.x)<34){d.taken=true;
+ // Reproducir al recoger, antes de que el primer hallazgo abra el modal y pause.
+ soundPlay('pickup');
+ if(d.type==='beer'){hero.beers++;announceItem('beer')}else{hero.owned.add(d.type);announceItem(d.type)}
+ renderInventory();if(acquiredNotice){cam=interior?0:Math.max(0,Math.min(WORLD-540,hero.x-190));return;}}}// Un "Hallo" al comenzar el acercamiento y luego cada 5 s
 // mientras haya enemigos avanzando desde la derecha hacia el héroe.
 const enemiesApproaching=enemies.some(e=>!e.dead&&e.x>hero.x+85&&e.x<hero.x+370&&e.stun<=0);
 if(enemiesApproaching){
@@ -491,6 +530,7 @@ if(enemiesApproaching){
 }else halloCooldown=0;
 halloNearby=enemiesApproaching;
 for(const e of enemies){
+ e.hitFlash=Math.max(0,(e.hitFlash||0)-dt);
  if(e.dead){
   if(e.type==='chainsaw'&&e.anim==='death'){
    e.deathTime+=dt;
@@ -570,16 +610,21 @@ for(const e of enemies){
  const frames=isChainsaw?chainsawEnemyAnims:e.type==='hooligan'?hooliganAnims:enemyAnims;
  const frame=frames[e.anim||'walk']?.[e.animFrame||0];
  if(frame?.complete&&frame.naturalWidth){
-  const scale=isChainsaw ? (e.anim==='hurt'?0.85:0.58) : e.type==='hooligan' ? 0.90 : e.type==='boss' ? 0.48 : 0.43;
+  const scale=isChainsaw?.58:e.type==='hooligan'?.90:e.type==='boss'?.48:.43;
   const w=frame.naturalWidth*scale,h=frame.naturalHeight*scale;
   c.save();c.translate(Math.round(x),e.y);
   // Los PNG del villano ya miran a la izquierda; no invertirlos al entrar.
   c.scale(isChainsaw?(e.face===-1?1:-1):e.type==='hooligan'?(e.face===-1?-1:1):(e.face===1?-1:1),1);
-  // El cuerpo del villano con motosierra permanece siempre opaco, incluso al recibir daño.
-  c.globalAlpha=isChainsaw?1:(e.inv>0&&!e.dead&&Math.floor(performance.now()/85)%2===0?.55:1);
+  c.globalAlpha=1; // El sprite queda opaco: el feedback de daño es un tinte rojo.
   // Los sprites tienen 14px transparentes bajo las botas: alinear la silueta al piso.
-  c.drawImage(frame,isChainsaw?-w/2:e.type==='hooligan'?-w*.46:-w/2,
-    isChainsaw?-h+(e.anim==='hurt'?0:14*scale):-h,w,h);
+  const drawX=isChainsaw?-w/2:e.type==='hooligan'?-w*.46:-w/2;
+  const drawY=isChainsaw?-h+14*scale:-h;
+  c.drawImage(frame,drawX,drawY,w,h);
+  if(e.hitFlash>0){
+   // Transparencia roja leve: aparece al impactar y se desvanece en 260 ms.
+   c.globalAlpha=.40*Math.min(1,e.hitFlash/.12);
+   c.drawImage(enemyHitTint(frame),drawX,drawY,w,h);
+  }
   c.restore();
  }
  if(!e.dead){
@@ -778,7 +823,7 @@ connectRemote();
 function restartGame(){
  clearRemoteHold();keys.clear();for(const key in hold)hold[key]=false;
  gameAudio.music.pause();gameAudio.music.currentTime=0;
- for(const voice of [...attackVoices,gameAudio.hurt,gameAudio.hallo]){voice.pause();voice.currentTime=0}
+ for(const voice of [...attackVoices,...pickupVoices,gameAudio.hurt,gameAudio.hallo,gameAudio.pickup]){voice.pause();voice.currentTime=0}
  gameStarted=false;gamePaused=false;storyPending=false;storyShown=false;
  storyEl.classList.remove('is-active');storyEl.setAttribute('aria-hidden','true');
  startEl.style.display='flex';
