@@ -1,0 +1,1 @@
+V39: selección por cámara predeterminada, apertura automática al entrar a elegir héroe, selección manual opcional activada explícitamente desde el celular. El host bloquea joystick/A y clicks de selección hasta recibir hero_mode=manual. El reconocimiento de retratos sigue funcionando en modo escaneo. Se conservan los objetos de V38.
