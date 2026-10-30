@@ -182,6 +182,16 @@ for(const [state,count] of Object.entries({idle:4,walk:7,punch:5,hit:4})){
 for(const [name,n] of Object.entries({walk:6,punch:8})){
  for(let i=1;i<=n;i++){const im=new Image();im.src=`sprites/enemigo/${name}_${String(i).padStart(2,'0')}.png`;enemyAnims[name].push(im)}
 }
+// V28: villano alto con motosierra, sprites aprobados en la demo V3.
+// Cada pose tiene lienzo completo y fondo transparente; no recortar en runtime.
+const chainsawEnemyAnims={walk:[],attack:[],hurt:[],death:[]};
+for(const [state,count] of Object.entries({walk:6,attack:4,hurt:4,death:6})){
+ for(let i=1;i<=count;i++){
+  const image=new Image();
+  image.src=`sprites/chainsaw_enemy/${state}_${String(i).padStart(2,'0')}.png`;
+  chainsawEnemyAnims[state].push(image);
+ }
+}
 // V11: panorama precortado para no subir una textura de 8640px a la GPU cada frame.
 const PANORAMA_TILE_WIDTH=540, panoramaTiles=[];
 for(let i=0;i<16;i++){const im=new Image();im.decoding='async';im.src=`assets/panorama_tiles/tile_${String(i).padStart(2,'0')}.jpg`;panoramaTiles.push(im)}
@@ -271,7 +281,7 @@ function drawAcquired(){
 
 const guardFrames=Array.from({length:4},(_,i)=>{const im=new Image();im.src=`sprites/shield_guard_${String(i+1).padStart(2,'0')}.png`;return im});const itemNames={sword:'Espada',shield:'Escudo',key:'Llave',chainsaw:'Motosierra'};const inventoryEl=document.querySelector('#inventory');const specialNames={book:'Libro',lantern:'Farol',hedgehog:'Erizo',emblem:'Emblema',red:'Objeto rojo'};
 function say(t,time=3){/* V12: sin mensajes de combate ni textos de ayuda sobre el juego. */}
-function spawn(x,type='basic',y=GROUND){if(type==='basic'){normalEnemyCounter++;if(normalEnemyCounter%3===0)type='hooligan'}let hp=type==='boss'?34:type==='chainsaw'?17:type==='heavy'?7:3;return {id:++enemyCounter,x,y,hp,max:hp,type,stun:0,inv:0,attack:0,face:-1,dead:false,drop:null,triggered:false,shot:1.5+Math.random()*1.2,throwPending:null,anim:'walk',animFrame:0,animTime:0,attackWindup:0,role:type==='hooligan'?'knife':'melee'}}
+function spawn(x,type='basic',y=GROUND){if(type==='basic'){normalEnemyCounter++;if(normalEnemyCounter%3===0)type='hooligan'}let hp=type==='boss'?34:type==='chainsaw'?10:type==='heavy'?7:3;return {id:++enemyCounter,x,y,hp,max:hp,type,stun:0,inv:0,attack:0,face:-1,dead:false,drop:null,triggered:false,shot:1.5+Math.random()*1.2,throwPending:null,anim:'walk',animFrame:0,animTime:0,attackWindup:0,attackPending:false,deathTime:0,dropReleased:false,role:type==='hooligan'?'knife':'melee'}}
 function reset(){halloCooldown=0;halloNearby=false;hero={x:140,y:GROUND,face:1,hp:MAX_HP,state:'idle',frame:0,elapsed:0,inv:0,dodgeDir:0,combo:0,comboTime:0,owned:new Set(['sword']),equipped:['sword'],attackSlot:'sword',defenseSlot:'dodge',uniqueSlot:null,beers:0,swing:0,jumpHeight:0,jumpV:0,crouch:false,blocking:false,blockTime:0,hitTime:0};enemies=[];drops=[];projectiles=[];phases=[{start:0,end:1800,count:5,spawned:false,cleared:false},{start:1800,end:3600,count:12,spawned:false,cleared:false,kills:0,shieldGiven:false},{start:3600,end:5400,count:15,spawned:false,cleared:false,midBoss:false},{start:5400,end:7200,count:9,spawned:false,cleared:false}];cam=0;ended=false;interior=false;castleWave=0;bossSpawned=false;enemyCounter=0;normalEnemyCounter=0;attackHits=new Set();acquiredNotice=null;acquiredQueue=[];say('PARTE 1 — Enfrentá la primera oleada. La llave está más adelante.');spawnPhase(0);renderInventory()}
 function spawnPhase(p){let ph=phases[p];if(ph.spawned)return;ph.spawned=true;
 const xs=p===0?[420,680,930,1220,1530]:p===1?[1870,2000,2140,2270,2410,2550,2680,2820,2950,3100,3250,3400]:p===2?[3680,3810,3940,4060,4190,4320,4450,4570,4690,4810,4930,5050,5160,5260,5340]:[5520,5700,5870,6040,6210,6370,6510,6660,6800];
@@ -283,6 +293,12 @@ if(p===1&&i===9)e.drop='shield';
 if(p===2&&i===13)e.drop='chainsaw';
 if(p===2&&i===5)e.drop='beer';
 if(p===3&&i===5)e.drop='beer';
+// TODOS los hooligans que lanzan cuchillos sueltan una cerveza al morir.
+// Si uno tiene asignado otro objeto especial (ej. escudo), conserva ambos.
+if(e.type==='hooligan'){
+ if(!e.drop)e.drop='beer';
+ else if(e.drop!=='beer')e.extraDrop='beer';
+}
 enemies.push(e)});
 say(['PARTE 1 — 5 enemigos. Conseguí la llave al final de la oleada.','PARTE 2 — 12 enemigos. El escudo aparece cerca del final.','PARTE 3 — 15 enemigos. Encontrá la motosierra.','PARTE 4 — 9 enemigos. Avanzá hacia el castillo.'][p],4)}
 function renderInventory(){
@@ -436,7 +452,17 @@ function action(a){
 function interact(){if(!interior&&hero.x>6860){if(!hero.owned.has('key')){say('Necesitás encontrar la llave para abrir el castillo.',4);return}if(!phases[3].cleared){say('Derrotá la última oleada antes de entrar.');return}interior=true;hero.x=130;hero.y=GROUND;cam=0;enemies=[];projectiles=[];castleWave=1;for(let i=0;i<6;i++)enemies.push(spawn(240+i*44,i%2?'heavy':'basic'));say('CASTILLO — Derrotá a los guardias. Después aparecerá el jefe.',5);return}say('Los objetos se recogen automáticamente. E abre el castillo.')}
 window.addEventListener('keydown',e=>{if(acquiredNotice){if(!e.repeat&&(e.code==='KeyJ'||e.code==='Enter'))continueAfterItem();e.preventDefault();return;}if(e.code.startsWith('Digit')){const n=Number(e.code.slice(-1));if(n>=1&&n<=4&&!e.repeat)toggleEquip(['sword','shield','key','chainsaw'][n-1]);return}const a=keyMap[e.code];if(!a)return;e.preventDefault();if(!keys.has(e.code)){if(a==='defend')action('defend');else if(a in hold)hold[a]=true;else action(a)}keys.add(e.code)});window.addEventListener('keyup',e=>{const a=keyMap[e.code];keys.delete(e.code);if(a==='defend')hold.block=[...keys].some(k=>keyMap[k]==='defend');else if(a in hold)hold[a]=[...keys].some(k=>keyMap[k]===a)});window.addEventListener('blur',()=>{keys.clear();for(const k in hold)hold[k]=false});
 for(const id of ['left','right','up','down','punch','kick','sword','dodge','interact']){const b=document.getElementById(id);b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);if(id==='up')action('jump');else if(id==='down')hold.crouch=true;else if(id==='dodge')action('defend');else if(id in hold)hold[id]=true;else action(id)});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>{if(id==='down')hold.crouch=false;else if(id==='dodge')hold.block=false;else if(id in hold)hold[id]=false})}document.querySelector('#restart').onclick=()=>restartGame();
-function hitTest(){const state=hero.state;if(!['punch','kick','sword','motosierra'].includes(state))return;const active=state==='motosierra'?[2,3,4,5,6]:state==='punch'?[2,3,4,5,6]:state==='kick'?[3,4,5]:[2,3,4,5,6];if(!active.includes(hero.frame))return;const chain=hero.attackSlot==='chainsaw';const reach=state==='punch'?88:state==='kick'?112:state==='motosierra'?155:chain?135:145;const dmg=state==='punch'?(hero.combo===3?3:1):state==='kick'?2:state==='motosierra'?6:chain?5:3;for(const e of enemies){if(e.dead||attackHits.has(e.id)||e.inv>0)continue;const dx=e.x-hero.x;if(dx*hero.face>4&&dx*hero.face<reach&&Math.abs(e.y-hero.y)<44){e.hp-=dmg;e.stun=e.type==='boss'?.17:.35;e.inv=.20;if(e.type==='hooligan'){e.anim='hit';e.animFrame=0;e.animTime=0;e.throwPending=null}e.x+=hero.face*(e.type==='boss'?7:22);attackHits.add(e.id);if(e.hp<=0){e.dead=true;if(e.drop){drops.push({x:e.x,y:e.y,type:e.drop,taken:false});if(e.extraDrop)drops.push({x:e.x+24,y:e.y,type:e.extraDrop,taken:false});say(`¡Objeto encontrado: ${e.drop==='beer'?'CERVEZA':itemNames[e.drop]}! Pasá por encima para recogerlo.`,4)}if(e.type==='boss'){ended=true;say('¡JEFE DERROTADO! NIVEL 1 COMPLETADO.',999)}else say('¡Enemigo derrotado!')}else say(`Impacto ${dmg} · ${e.type==='boss'?'JEFE':e.type==='chainsaw'?'MOTOSIERRA':'ENEMIGO'} ${Math.max(0,e.hp)}/${e.max}`,1.1)}}}
+function hitTest(){const state=hero.state;if(!['punch','kick','sword','motosierra'].includes(state))return;const active=state==='motosierra'?[2,3,4,5,6]:state==='punch'?[2,3,4,5,6]:state==='kick'?[3,4,5]:[2,3,4,5,6];if(!active.includes(hero.frame))return;const chain=hero.attackSlot==='chainsaw';const reach=state==='punch'?88:state==='kick'?112:state==='motosierra'?155:chain?135:145;const dmg=state==='punch'?(hero.combo===3?3:1):state==='kick'?2:state==='motosierra'?6:chain?5:3;for(const e of enemies){if(e.dead||attackHits.has(e.id)||e.inv>0)continue;const dx=e.x-hero.x;if(dx*hero.face>4&&dx*hero.face<reach&&Math.abs(e.y-hero.y)<44){e.hp-=dmg;e.stun=e.type==='boss'?.17:e.type==='chainsaw'?.24:.35;e.inv=.20;
+if(e.type==='hooligan'){e.anim='hit';e.animFrame=0;e.animTime=0;e.throwPending=null}
+if(e.type==='chainsaw'){e.anim='hurt';e.animFrame=0;e.animTime=0;e.attackPending=false}e.x+=hero.face*(e.type==='boss'?7:22);attackHits.add(e.id);if(e.hp<=0){e.dead=true;
+ // El nuevo villano completa su caída antes de soltar la motosierra.
+ if(e.type==='chainsaw'){
+  e.anim='death';e.animFrame=0;e.animTime=0;e.deathTime=0;e.dropReleased=false;
+ }else if(e.drop){
+  drops.push({x:e.x,y:e.y,type:e.drop,taken:false});
+  if(e.extraDrop)drops.push({x:e.x+24,y:e.y,type:e.extraDrop,taken:false});
+  say(`¡Objeto encontrado: ${e.drop==='beer'?'CERVEZA':itemNames[e.drop]}! Pasá por encima para recogerlo.`,4);
+ }if(e.type==='boss'){ended=true;say('¡JEFE DERROTADO! NIVEL 1 COMPLETADO.',999)}else say('¡Enemigo derrotado!')}else say(`Impacto ${dmg} · ${e.type==='boss'?'JEFE':e.type==='chainsaw'?'MOTOSIERRA':'ENEMIGO'} ${Math.max(0,e.hp)}/${e.max}`,1.1)}}}
 function update(dt){if(!gameStarted||gamePaused||storyPending||acquiredNotice||(ended&&hero.state!=='death'))return;if(hero.state==='death'){hero.elapsed+=dt;while(hero.elapsed>=1/11&&hero.frame<anims.death[0]-1){hero.elapsed-=1/11;hero.frame++}return;}hero.inv=Math.max(0,hero.inv-dt);
  // V16: el impacto interrumpe el ataque, pero no inmoviliza el stick.
  // Recuperación de seguridad si el navegador pierde tiempo de animación.
@@ -464,11 +490,24 @@ if(enemiesApproaching){
  if(halloCooldown<=0){soundPlay('hallo');halloCooldown=5;}
 }else halloCooldown=0;
 halloNearby=enemiesApproaching;
-for(const e of enemies){if(e.dead)continue;e.stun=Math.max(0,e.stun-dt);e.inv=Math.max(0,e.inv-dt);e.attack=Math.max(0,e.attack-dt);
-e.animTime=(e.animTime||0)+dt;
-const isHooligan=e.type==='hooligan';
-const animCount=isHooligan?({idle:4,walk:7,punch:5,hit:4}[e.anim]||7):(e.anim==='punch'?8:6);
-const animFps=isHooligan?(e.anim==='walk'?12:e.anim==='punch'?12:e.anim==='hit'?9:6):18;
+for(const e of enemies){
+ if(e.dead){
+  if(e.type==='chainsaw'&&e.anim==='death'){
+   e.deathTime+=dt;
+   e.animFrame=Math.min(chainsawEnemyAnims.death.length-1,Math.floor(e.deathTime*9));
+   // La motosierra aparece como objeto independiente al finalizar la caída.
+   if(!e.dropReleased&&e.deathTime>=.66){
+    e.dropReleased=true;
+    if(e.drop)drops.push({x:e.x,y:e.y,type:e.drop,taken:false});
+   }
+  }
+  continue;
+ }
+ e.stun=Math.max(0,e.stun-dt);e.inv=Math.max(0,e.inv-dt);e.attack=Math.max(0,e.attack-dt);
+ e.animTime=(e.animTime||0)+dt;
+ const isHooligan=e.type==='hooligan',isChainsaw=e.type==='chainsaw';
+ const animCount=isChainsaw?({walk:6,attack:4,hurt:4}[e.anim]||6):isHooligan?({idle:4,walk:7,punch:5,hit:4}[e.anim]||7):(e.anim==='punch'?8:6);
+ const animFps=isChainsaw?(e.anim==='attack'?10:e.anim==='hurt'?9:12):isHooligan?(e.anim==='walk'?12:e.anim==='punch'?12:e.anim==='hit'?9:6):18;
 let animSteps=0;
 while(e.animTime>=1/animFps&&animSteps++<5){
  e.animTime-=1/animFps;e.animFrame++;
@@ -477,25 +516,41 @@ while(e.animTime>=1/animFps&&animSteps++<5){
   e.throwPending=null;
   projectiles.push({x:e.x-25,y:GROUND-72,vx:-320,kind:'knife',life:2.7,damage:2});
  }
+ // El daño de la motosierra ocurre durante el barrido, no al empezar la pose.
+ if(isChainsaw&&e.anim==='attack'&&e.attackPending&&e.animFrame>=2){
+  e.attackPending=false;
+  if(e.stun<=0&&Math.abs(hero.x-e.x)<102&&hero.jumpHeight<45&&hero.hp>0){
+   damageHero(2,e.x,'¡Te alcanzó la motosierra!');
+  }
+ }
  if(e.animFrame>=animCount){
-  if(e.anim==='punch'||e.anim==='hit'){e.anim='walk';e.animFrame=0}
+  if(isChainsaw&&(e.anim==='attack'||e.anim==='hurt')){e.anim='walk';e.animFrame=0;e.attackPending=false}
+  else if(e.anim==='punch'||e.anim==='hit'){e.anim='walk';e.animFrame=0}
   else e.animFrame=0;
  }
 }
 const dx=hero.x-e.x,dy=hero.y-e.y;
 
 e.face=e.type==='boss'?Math.sign(dx)||-1:-1;if(e.stun===0){if(e.role==='melee'){
- if(Math.abs(dx)<350&&Math.abs(dx)>54){if(e.type==='boss')e.x+=Math.sign(dx)*70*dt;else if(dx<0)e.x-=Math.min(-dx-54,(e.type==='chainsaw'?82:55)*dt)}
+ const stop=e.type==='chainsaw'?80:54;
+ if(Math.abs(dx)<350&&Math.abs(dx)>stop){
+  if(e.type==='boss')e.x+=Math.sign(dx)*70*dt;
+  else if(dx<0)e.x-=Math.min(-dx-stop,(e.type==='chainsaw'?82:55)*dt);
+ }
 }else{
  // Tiradores: se acercan siempre al heroe, incluso despues de lanzar.
  // No retroceden ni se detienen a distancia de lanzamiento.
  if(dx < -48)e.x-=Math.min(-dx-48,65*dt);
-}e.y=GROUND;if((e.role==='melee'||e.type==='hooligan')&&Math.abs(dx)<60&&e.attack<=0&&hero.inv<=0&&hero.jumpHeight<38&&hero.hp>0){
- const damage=e.type==='boss'?3:e.type==='chainsaw'?2:1;
+}e.y=GROUND;if((e.role==='melee'||e.type==='hooligan')&&Math.abs(dx)<(isChainsaw?96:60)&&e.attack<=0&&hero.hp>0&&e.anim!=='attack'&&e.anim!=='hurt'){
+ if(isChainsaw){
+  e.attack=1.45;e.anim='attack';e.animFrame=0;e.animTime=0;e.attackPending=true;
+ }else if(hero.inv<=0&&hero.jumpHeight<38){
+ const damage=e.type==='boss'?3:1;
  damageHero(damage,e.x,`¡Te golpearon! -${damage} vida.`);
  e.attack=e.type==='boss'?.8:e.type==='hooligan'?1.3:1.1;
  e.anim='punch';e.animFrame=0;e.animTime=0;
  if(e.type==='hooligan')e.throwPending=null;
+ }
 }
 e.shot-=dt;
 if(e.role==='knife'&&e.shot<=0&&dx<0&&dx>-480&&e.anim!=='punch'&&e.anim!=='hit'){
@@ -509,18 +564,29 @@ function draw(){rect(0,0,540,960,'#142b29');if(interior){rect(0,65,540,895,'#292
 
 for(const d of drops){if(d.taken)continue;const x=d.x-cam,y=d.y-78;if(x<-45||x>585)continue;drawItemArt(d.type,x-31,y-28,62,62)}
 for(const e of enemies){
- if(e.dead)continue;
- const x=e.x-cam;if(x<-100||x>640)continue;
- const frames=e.type==='hooligan'?hooliganAnims:enemyAnims;const frame=frames[e.anim||'walk']?.[e.animFrame||0];
+ if(e.dead&&!(e.type==='chainsaw'&&e.anim==='death'&&e.deathTime<1.25))continue;
+ const x=e.x-cam;if(x<-170||x>700)continue;
+ const isChainsaw=e.type==='chainsaw';
+ const frames=isChainsaw?chainsawEnemyAnims:e.type==='hooligan'?hooliganAnims:enemyAnims;
+ const frame=frames[e.anim||'walk']?.[e.animFrame||0];
  if(frame?.complete&&frame.naturalWidth){
-  const scale=e.type==='hooligan'?.90:e.type==='boss'?.48:.43;
+  const scale=isChainsaw ? (e.anim==='hurt'?0.85:0.58) : e.type==='hooligan' ? 0.90 : e.type==='boss' ? 0.48 : 0.43;
   const w=frame.naturalWidth*scale,h=frame.naturalHeight*scale;
-  c.save();c.translate(Math.round(x),e.y);c.scale(e.type==='hooligan'?(e.face===-1?-1:1):(e.face===1?-1:1),1);
-  c.globalAlpha=e.inv>0&&Math.floor(performance.now()/85)%2===0?.55:1;
-  c.drawImage(frame,e.type==='hooligan'?-w*.46:-w/2,-h,w,h);c.restore();
+  c.save();c.translate(Math.round(x),e.y);
+  // Los PNG del villano ya miran a la izquierda; no invertirlos al entrar.
+  c.scale(isChainsaw?(e.face===-1?1:-1):e.type==='hooligan'?(e.face===-1?-1:1):(e.face===1?-1:1),1);
+  // El cuerpo del villano con motosierra permanece siempre opaco, incluso al recibir daño.
+  c.globalAlpha=isChainsaw?1:(e.inv>0&&!e.dead&&Math.floor(performance.now()/85)%2===0?.55:1);
+  // Los sprites tienen 14px transparentes bajo las botas: alinear la silueta al piso.
+  c.drawImage(frame,isChainsaw?-w/2:e.type==='hooligan'?-w*.46:-w/2,
+    isChainsaw?-h+(e.anim==='hurt'?0:14*scale):-h,w,h);
+  c.restore();
  }
- if(e.type==='boss')label(tr('JEFE'),x-22,e.y-172,'#ffce94','13px monospace');
- rect(x-22,e.y-158,44,5,'#41201e');rect(x-22,e.y-158,44*e.hp/e.max,5,'#d45d4c');
+ if(!e.dead){
+  if(e.type==='boss')label(tr('JEFE'),x-22,e.y-172,'#ffce94','13px monospace');
+  const hpY=e.y-(isChainsaw?175:158);
+  rect(x-22,hpY,44,5,'#41201e');rect(x-22,hpY,44*e.hp/e.max,5,'#d45d4c');
+ }
 }
 for(const q of projectiles){const x=q.x-cam;if(x<0||x>540)continue;c.save();c.translate(x,q.y);c.rotate(q.vx>0?.15:3.0);rect(-15,-3,27,6,'#d8e4df');rect(-18,-5,9,10,'#78543b');c.restore()}
 const px=hero.x-cam,im=sprites[hero.state][hero.frame],scale=anims[hero.state][1];c.fillStyle='rgba(0,0,0,.4)';c.beginPath();c.ellipse(px,hero.y+3,Math.max(15,35-hero.jumpHeight*.12),6,0,0,Math.PI*2);c.fill();if(im?.complete&&im.naturalWidth){c.save();c.translate(Math.round(px),hero.y-hero.jumpHeight);c.scale(hero.face,hero.crouch?.68:1);c.globalAlpha=(hero.state==='hit'||hero.state==='death'||hero.blocking)?1:hero.inv>0&&Math.floor(performance.now()/90)%2===0?.65:1;if(hero.state==='hit'||hero.state==='death'){
