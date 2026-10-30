@@ -83,7 +83,11 @@ button:active{box-shadow:0 0 0 transparent!important;transform:translate(2px,2px
 .hero-choice strong{font-size:clamp(12px,2vw,20px)}.hero-choice small{color:#edaa9c;font:bold 12px monospace}
 .hero-select-footer{color:#f4cf8a;font:bold clamp(11px,1.8vw,15px) monospace}
 @media(max-width:430px){.hero-select-shell{padding:9px}.hero-choices{margin:13px auto}.hero-portrait{height:34vh}}
-</style></head><body><div id="heroSelection" role="dialog" aria-modal="true" aria-label="Choose your hero" aria-hidden="true">
+/* V40: confirmaciones arcade, siempre legibles incluso si SELECT pausa el canvas. */
+#gameFeedback{position:fixed;left:50%;top:9%;transform:translateX(-50%);z-index:115;width:min(90vw,490px);padding:19px 14px;text-align:center;pointer-events:none;background:rgba(8,44,34,.91);border:4px solid #f27672;box-shadow:6px 6px 0 #163c77;color:#ecebd6;font:900 clamp(15px,2.8vw,25px)/1.4 monospace;text-shadow:2px 2px #071911;image-rendering:pixelated}
+#gameFeedback[hidden]{display:none!important}#gameFeedback .feedback-title{display:block;color:#f4cc87;font-size:clamp(13px,2.2vw,19px)}#gameFeedback .feedback-name{display:block;color:#f27672;font-size:clamp(20px,4.3vw,34px)}#gameFeedback .feedback-hint{display:block;color:#ecebd6;font-size:clamp(11px,1.9vw,16px)}
+#heroSelection.confirming .hero-choice{opacity:.45;pointer-events:none}#heroSelection.confirming .hero-choice.active{opacity:1}
+</style></head><body><div id="gameFeedback" role="status" aria-live="assertive" hidden><span class="feedback-title" id="feedbackTitle"></span><span class="feedback-name" id="feedbackName"></span><span class="feedback-hint" id="feedbackHint"></span></div><div id="heroSelection" role="dialog" aria-modal="true" aria-label="Choose your hero" aria-hidden="true">
  <div class="hero-select-shell"><div class="hero-select-top">THE OLD EVIL · PLAYER SELECT</div>
  <h2>CHOOSE YOUR HERO</h2><p id="heroModeText">SCAN YOUR HERO IN THE PAINTING WITH YOUR PHONE · MANUAL SELECTION OPTIONAL</p>
  <div class="hero-choices">
@@ -344,6 +348,34 @@ const ITEM_GUIDE={
  emblem:{en:['EMBLEM','SELECT → R2','Special collectible for the extra slot.','Scan the emblem in SELECT to equip it.'],es:['EMBLEMA','SELECT → R2','Objeto especial para la ranura extra.','Escaneá el emblema en SELECT para equiparlo.'],de:['EMBLEM','SELECT → R2','Spezialobjekt für den Zusatzplatz.','Scanne das Emblem in SELECT zum Ausrüsten.']},
  red:{en:['RED ITEM','SELECT → R2','Special collectible for the extra slot.','Scan this item in SELECT to equip it.'],es:['OBJETO ROJO','SELECT → R2','Objeto especial para la ranura extra.','Escaneá el objeto en SELECT para equiparlo.'],de:['ROTES OBJEKT','SELECT → R2','Spezialobjekt für den Zusatzplatz.','Scanne das Objekt in SELECT zum Ausrüsten.']}
 };
+// V40: notificación de equipamiento y confirmación de héroe.
+const FEEDBACK_ITEM={
+ shield:{en:['SHIELD EQUIPPED!','W · DEFEND'],es:['¡EQUIPASTE EL ESCUDO!','W · DEFENDER'],de:['SCHILD AUSGERÜSTET!','W · BLOCKEN']},
+ chainsaw:{en:['CHAINSAW EQUIPPED!','D · ATTACK'],es:['¡EQUIPASTE LA MOTOSIERRA!','D · ATACAR'],de:['KETTENSÄGE AUSGERÜSTET!','D · ANGRIFF']},
+ key:{en:['KEY READY!','L · USE AT THE CASTLE'],es:['¡LLAVE DISPONIBLE!','L · USAR EN EL CASTILLO'],de:['SCHLÜSSEL BEREIT!','L · AM SCHLOSS BENUTZEN']},
+ beer:{en:['BEER READY!','R · DRINK TO HEAL'],es:['¡CERVEZA DISPONIBLE!','R · BEBER PARA CURARTE'],de:['BIER BEREIT!','R · ZUM HEILEN TRINKEN']}
+};
+let feedbackTimer=null,heroConfirmTimer=null,heroConfirmPending=false;
+function clearGameFeedback(){if(feedbackTimer!==null)clearTimeout(feedbackTimer);feedbackTimer=null;document.getElementById('gameFeedback').hidden=true;}
+function showGameFeedback(title,name,hint,duration=2600){
+ clearGameFeedback();document.getElementById('feedbackTitle').textContent=title;
+ document.getElementById('feedbackName').textContent=name;
+ document.getElementById('feedbackHint').textContent=hint;
+ document.getElementById('gameFeedback').hidden=false;
+ if(duration>0)feedbackTimer=setTimeout(clearGameFeedback,duration);
+}
+function playConfirmedItemSound(){
+ // SELECT pausa el gameplay: usar el canal de monedas directamente sin
+ // la restricción soundCanPlay(), pero sin tocar el estado de la música.
+ if(!audioUnlockRequired&&gameStarted){const snd=pickupVoices[pickupVoiceIndex];pickupVoiceIndex=(pickupVoiceIndex+1)%pickupVoices.length;playVoice(snd)}
+}
+function notifyItemConfirmed(id,slot){
+ const data=FEEDBACK_ITEM[id]?.[currentLanguage]||FEEDBACK_ITEM[id]?.en;
+ if(!data)return;
+ const heading=({en:'ITEM CONFIRMED',es:'OBJETO CONFIRMADO',de:'OBJEKT BESTÄTIGT'})[currentLanguage];
+ const name=data[0],hint=id==='chainsaw'&&slot==='unique'?({en:'R2 · SPECIAL SLOT',es:'R2 · RANURA ESPECIAL',de:'R2 · SPEZIALPLATZ'})[currentLanguage]:data[1];
+ showGameFeedback(heading,name,hint,3000);playConfirmedItemSound();
+}
 function announceItem(id){
  if(seenItemTutorials.has(id))return false;
  seenItemTutorials.add(id);
@@ -802,16 +834,17 @@ function updateHeroSelection(){
  heroChoiceButtons.forEach((btn,i)=>{btn.classList.toggle('active',i===selectionIndex);btn.setAttribute('aria-pressed',String(i===selectionIndex))});
 }
 function showHeroSelection(){
+ if(heroConfirmTimer!==null)clearTimeout(heroConfirmTimer);heroConfirmTimer=null;heroConfirmPending=false;clearGameFeedback();selectionEl.classList.remove('confirming');
  selectingCharacter=true;heroManualMode=false;selectionHoldActive=false;selectionIndex=0;selectedHero='original';updateHeroSelection();
  selectionEl.classList.add('is-active');selectionEl.setAttribute('aria-hidden','false');
  selectionEl.classList.remove('manual-mode');document.getElementById('heroModeText').textContent='SCAN YOUR HERO IN THE PAINTING WITH YOUR PHONE · MANUAL SELECTION OPTIONAL';
  clearRemoteHold();keys.clear();for(const k in hold)hold[k]=false;sendPhoneState();
 }
-function moveHeroSelection(dir){if(!selectingCharacter||!heroManualMode)return;selectionIndex=(selectionIndex+dir+2)%2;updateHeroSelection()}
+function moveHeroSelection(dir){if(!selectingCharacter||!heroManualMode||heroConfirmPending)return;selectionIndex=(selectionIndex+dir+2)%2;updateHeroSelection()}
 function confirmHeroSelection(){
- if(!selectingCharacter)return;
- selectedHero=selectionIndex===1?'cat':'original';selectingCharacter=false;
- selectionEl.classList.remove('is-active');selectionEl.setAttribute('aria-hidden','true');
+ if(!selectingCharacter||heroConfirmPending)return;
+ selectedHero=selectionIndex===1?'cat':'original';heroConfirmPending=true;
+ selectionEl.classList.add('confirming');
  // El Gato Montés comienza sin espada: D solo se habilita al conseguir la motosierra.
  if(selectedHero==='cat'){
   hero.owned.delete('sword');
@@ -826,11 +859,24 @@ function confirmHeroSelection(){
  hero.state='idle';hero.frame=0;hero.elapsed=0;
  prepareChosenHero();
  renderInventory();
- showStoryPrologue();sendPhoneState();
+ const heroName=selectedHero==='cat'?'WILDCAT':'ORIGINAL HERO';
+ showGameFeedback(
+  ({en:'YOU SELECTED YOUR HERO!',es:'¡SELECCIONASTE A TU HÉROE!',de:'DU HAST DEINEN HELDEN GEWÄHLT!'})[currentLanguage],
+  heroName,
+  ({en:'THE STORY BEGINS IN 5 SECONDS',es:'LA HISTORIA COMIENZA EN 5 SEGUNDOS',de:'DIE GESCHICHTE BEGINNT IN 5 SEKUNDEN'})[currentLanguage],
+  0
+ );
+ sendPhoneState();
+ heroConfirmTimer=setTimeout(()=>{
+  heroConfirmTimer=null;if(!heroConfirmPending||!selectingCharacter)return;
+  heroConfirmPending=false;selectingCharacter=false;
+  selectionEl.classList.remove('confirming','is-active');selectionEl.setAttribute('aria-hidden','true');
+  clearGameFeedback();showStoryPrologue();sendPhoneState();
+ },5000);
 }
 heroChoiceButtons.forEach((btn,i)=>btn.addEventListener('click',()=>{if(!heroManualMode)return;selectionIndex=i;updateHeroSelection();confirmHeroSelection()}));
 window.addEventListener('keydown',e=>{
- if(!selectingCharacter||!heroManualMode)return;
+ if(!selectingCharacter||!heroManualMode||heroConfirmPending)return;
  if(['ArrowLeft','KeyA','ArrowRight','KeyD','KeyJ','Enter','Space'].includes(e.code)){
   e.preventDefault();e.stopImmediatePropagation();if(e.repeat)return;
   if(['ArrowLeft','KeyA'].includes(e.code))moveHeroSelection(-1);
@@ -969,6 +1015,7 @@ function connectRemote(){
     const a=msg.action;
     if(ended&&hero.hp<=0)return; // Joystick bloqueado durante la cuenta regresiva.
     if(selectingCharacter){
+      if(heroConfirmPending)return;
       if(msg.kind==='hero_mode'&&(a==='manual'||a==='scan')){heroManualMode=a==='manual';selectionHoldActive=false;selectionEl.classList.toggle('manual-mode',heroManualMode);document.getElementById('heroModeText').textContent=heroManualMode?'MANUAL SELECTION · USE ◀ ▶ AND PRESS A':'SCAN YOUR HERO IN THE PAINTING WITH YOUR PHONE';sendPhoneState();return;}
       if(msg.kind==='hero_match'&&!heroManualMode&&(a==='original'||a==='cat')){selectionIndex=a==='cat'?1:0;updateHeroSelection();confirmHeroSelection();}
       if(heroManualMode&&msg.kind==='press'&&a==='punch')confirmHeroSelection();
@@ -991,7 +1038,15 @@ function connectRemote(){
       else if(a==='restart'){restartGame()}
       else if(a==='language'){setLanguage(msg.value||msg.lang||'en')}
       else if(a==='start')phoneStart();
-    }else if(msg.kind==='equip'&&['sword','shield','chainsaw','book','lantern','hedgehog','emblem','red'].includes(a)){toggleEquip(a,msg.slot==='unique'?'unique':null);sendPhoneState();}
+    }else if(msg.kind==='equip'&&['sword','shield','chainsaw','book','lantern','hedgehog','emblem','red'].includes(a)){
+      if(hero.owned.has(a)){
+       toggleEquip(a,msg.slot==='unique'?'unique':null);
+       if(FEEDBACK_ITEM[a])notifyItemConfirmed(a,msg.slot);
+      }
+      sendPhoneState();
+    }else if(msg.kind==='item_confirm'&&(a==='key'||a==='beer')){
+      if(a==='beer'?hero.beers>0:hero.owned.has('key'))notifyItemConfirmed(a);
+    }
     else if(msg.kind==='modal'){gamePaused=!!msg.open;clearRemoteHold();sendPhoneState();}
   }
  });
@@ -1007,13 +1062,14 @@ connectRemote();
 // RESTART (desde pausa o derrota) reinicia toda la experiencia y exige otro QR.
 // El servidor invalida el código anterior y expulsa al mando viejo.
 function restartGame(){
+ if(heroConfirmTimer!==null)clearTimeout(heroConfirmTimer);heroConfirmTimer=null;heroConfirmPending=false;clearGameFeedback();
  storyGeneration++;storyStarting=false;document.getElementById('storyContinue').textContent='PRESS A TO BEGIN';
  cancelDeathRestart();
  clearRemoteHold();keys.clear();for(const key in hold)hold[key]=false;
  gameAudio.music.pause();gameAudio.music.currentTime=0;
  for(const voice of [...attackVoices,...pickupVoices,gameAudio.hurt,gameAudio.hallo,gameAudio.pickup]){voice.pause();voice.currentTime=0}
  gameStarted=false;gamePaused=false;storyPending=false;storyShown=false;selectingCharacter=false;heroManualMode=false;selectedHero='original';selectionIndex=0;selectionHoldActive=false;
- selectionEl.classList.remove('is-active');selectionEl.setAttribute('aria-hidden','true');
+ selectionEl.classList.remove('is-active','confirming');selectionEl.setAttribute('aria-hidden','true');
  storyEl.classList.remove('is-active');storyEl.setAttribute('aria-hidden','true');
  startEl.style.display='flex';
  pauseEl.style.display='none';

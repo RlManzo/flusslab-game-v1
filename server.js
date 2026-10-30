@@ -112,6 +112,11 @@ wss.on('connection',ws=>{
     if(m.action==='original'||m.action==='cat')send(room.host,{type:'input',kind:'hero_match',action:m.action});
     return;
    }
+   // V40: confirmar objetos sin ranura (llave y cerveza) solo desde el mando vinculado.
+   if(m.type==='input'&&m.kind==='item_confirm'){
+    if(m.action==='key'||m.action==='beer')send(room.host,{type:'input',kind:'item_confirm',action:m.action});
+    return;
+   }
    if(m.type==='input'&&['hold','press','equip'].includes(m.kind)){
     const a=String(m.action||'');
     const valid={

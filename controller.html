@@ -200,7 +200,10 @@ function chooseReference(id){
  const owned=hostState.owned?.includes(id),n=tr(names[id]||id);
  $('slotChoice').classList.add('hide');
  if(id==='beer'||id==='key'){
-  $('selectionStatus').textContent=n+lt(': use with ',': se utiliza con ',': mit ')+(id==='beer'?'R':'L')+lt('. No slot required.','. No ocupa ranura.','. Kein Slot erforderlich.');return;
+  $('selectionStatus').textContent=n+lt(': use with ',': se utiliza con ',': mit ')+(id==='beer'?'R':'L')+lt('. No slot required.','. No ocupa ranura.','. Kein Slot erforderlich.');
+  // Confirmar al televisor que el jugador reconoció el objeto disponible.
+  if(owned&&connected&&ws?.readyState===WebSocket.OPEN)send('item_confirm',id);
+  return;
  }
  if(!owned){$('selectionStatus').textContent=lt('LOCKED: ','BLOQUEADO: ','GESPERRT: ')+n+lt(' has not been collected yet.',' todavía no se consiguió.',' wurde noch nicht gesammelt.');return;}
  if(id==='shield'){$('selectionStatus').textContent=lt('SHIELD collected: equipped to W.','ESCUDO conseguido: equipado en W.','SCHILD gesammelt: auf W ausgerüstet.');sendEquip(id);return;}
