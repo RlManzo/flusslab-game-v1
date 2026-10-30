@@ -105,6 +105,12 @@ wss.on('connection',ws=>{
   if(role==='host'&&room&&m.type==='host_state'){send(room.controller,m);return}
   if(role==='controller'&&room&&room.controller===ws){
    if(m.type==='modal'){send(room.host,{type:'input',kind:'modal',open:m.open===true});return}
+   // V37: transmitir al televisor el retrato reconocido por la cámara del celular.
+   // Solo se aceptan los dos héroes disponibles, desde el controlador vinculado.
+   if(m.type==='input'&&m.kind==='hero_match'){
+    if(m.action==='original'||m.action==='cat')send(room.host,{type:'input',kind:'hero_match',action:m.action});
+    return;
+   }
    if(m.type==='input'&&['hold','press','equip'].includes(m.kind)){
     const a=String(m.action||'');
     const valid={

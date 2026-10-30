@@ -190,7 +190,7 @@ function renderFirstStartHint(){
  'CONTROLLER VERBUNDEN! DRÜCKE START ZUM SPIELEN.');
 }
 let selectedObject=null;
-const refs=['key','book','lantern','beer','hedgehog','shield','emblem','chainsaw','red'];
+const refs=['key','beer','shield','chainsaw'];
 function lt(en,es,de){return currentLanguage==='de'?de:currentLanguage==='es'?es:en}
 function chooseReference(id){
  selectedObject=id;
@@ -207,7 +207,7 @@ function chooseReference(id){
 function sendEquip(id,slot){if(!hostState.owned?.includes(id))return; if(connected&&ws?.readyState===WebSocket.OPEN)ws.send(JSON.stringify({type:'input',kind:'equip',action:id,slot:slot||undefined}))}
 $('slotAttack').onclick=()=>{if(selectedObject==='chainsaw'||selectedObject==='sword')sendEquip(selectedObject);$('slotChoice').classList.add('hide')};$('slotUnique').onclick=()=>{if(selectedObject)sendEquip(selectedObject,'unique');$('slotChoice').classList.add('hide')};
 function sendModal(open){if(connected&&ws?.readyState===WebSocket.OPEN)ws.send(JSON.stringify({type:'modal',open}))}
-// Reconocimiento en el dispositivo: compara la región encuadrada con los nueve recortes.
+// V38: solo cuatro objetos reales del gameplay; dos referencias por objeto.
 // No desbloquea nada: el anfitrión controla el inventario real.
 const SCAN_W=36, SCAN_H=44, scanCanvas=document.createElement('canvas');
 scanCanvas.width=SCAN_W;scanCanvas.height=SCAN_H;
@@ -229,15 +229,19 @@ function extractFeature(img,sx,sy,sw,sh){scanCtx.clearRect(0,0,SCAN_W,SCAN_H);sc
 function similarity(a,b){let v=0;for(let i=0;i<a.length;i++)v+=a[i]*b[i];return v}
 async function loadReferences(){
  await Promise.all(refs.map(async id=>{
-  try{const image=new Image();image.src='references/'+id+'.jpg';await image.decode();
-   refFeatures.set(id,extractFeature(image,0,0,image.naturalWidth,image.naturalHeight));
-  }catch(e){console.warn('Referencia no cargada',id,e)}
+  const variants=[];
+  for(const suffix of ['', '_detail']){
+   try{const image=new Image();image.src='references/'+id+suffix+'.jpg';await image.decode();
+    variants.push(extractFeature(image,0,0,image.naturalWidth,image.naturalHeight));
+   }catch(e){console.warn('Referencia no cargada',id+suffix,e)}
+  }
+  if(variants.length)refFeatures.set(id,variants);
  }));
 }
 const refsLoaded=loadReferences();
 function detectObject(video){
  const vw=video.videoWidth,vh=video.videoHeight;if(!vw||!vh||refFeatures.size!==refs.length)return null;
- // Una puntuación máxima por OBJETO. Antes la segunda mejor puntuación
+ // Una puntuación máxima por OBJETO, entre ambas referencias. La segunda mejor
  // podía corresponder al mismo objeto en otro recorte y falsear el margen.
  const byId=new Map(refs.map(id=>[id,-1]));
  for(const scale of [0.36,0.42,0.50,0.59,0.69,0.79]){
@@ -246,8 +250,10 @@ function detectObject(video){
    const x=(vw-w)/2+dx*vw,y=(vh-h)/2+dy*vh;
    if(x<0||y<0||x+w>vw||y+h>vh)continue;
    const f=extractFeature(video,x,y,w,h);
-   for(const [id,ref] of refFeatures){const score=similarity(f,ref);
-    if(score>byId.get(id))byId.set(id,score);
+   for(const [id,variants] of refFeatures){
+    for(const ref of variants){const score=similarity(f,ref);
+     if(score>byId.get(id))byId.set(id,score);
+    }
    }
   }
  }
@@ -270,9 +276,9 @@ function scanTick(){
  try{
   const match=detectObject(video);if(!match)return;
   $('scanDebug').textContent='Mejor: '+names[match.id]+' · similitud '+match.score.toFixed(2)+' · segundo: '+names[match.runnerUp]+' · margen '+match.margin.toFixed(2);
-  // Coincidencias moderadas, como 0,37, requieren confirmación explícita;
-  // siempre se exige un margen mínimo y varios fotogramas consistentes.
-  const plausible=match.score>=.32 && match.margin>=.025;
+  // V38: umbral más estricto, cuatro objetos activos y confirmación explícita;
+  // siempre se exige margen frente a otros objetos y cuatro fotogramas consistentes.
+  const plausible=match.score>=.43 && match.margin>=.055;
   if(plausible){
    if(lastCandidate===match.id)candidateFrames++;else{lastCandidate=match.id;candidateFrames=1;clearCandidate()}
    if(candidateFrames>=4){
