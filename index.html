@@ -231,6 +231,19 @@ function paintGround(){if(layerAssets.ground.complete&&layerAssets.ground.natura
 
 const keys=new Set(),hold={left:false,right:false,crouch:false,block:false},keyMap={KeyA:'left',ArrowLeft:'left',KeyD:'right',ArrowRight:'right',KeyW:'jump',ArrowUp:'jump',KeyS:'crouch',ArrowDown:'crouch',KeyJ:'punch',KeyK:'kick',KeyL:'sword',KeyF:'defend',Space:'defend',KeyH:'defend',ShiftLeft:'defend',KeyE:'interact',KeyB:'cerveza',KeyM:'sword'};
 let projectiles=[],hero,enemies,drops,phases,cam,last=0,notice='',noticeTimer=0,attackHits,ended,interior,castleWave,bossSpawned,enemyCounter=0,normalEnemyCounter=0;
+// V31: 15 segundos desde la muerte; temporizador independiente de los FPS.
+const DEATH_RESTART_MS=15000;
+let deathRestartAt=0,deathRestartTimer=null;
+function deathRemaining(){return deathRestartAt?Math.max(0,Math.ceil((deathRestartAt-Date.now())/1000)):0;}
+function cancelDeathRestart(){if(deathRestartTimer!==null)clearTimeout(deathRestartTimer);deathRestartTimer=null;deathRestartAt=0;}
+function scheduleDeathRestart(){
+ cancelDeathRestart();
+ deathRestartAt=Date.now()+DEATH_RESTART_MS;
+ gamePaused=false;clearRemoteHold();keys.clear();for(const k in hold)hold[k]=false;
+ sendPhoneState();
+ deathRestartTimer=setTimeout(()=>{deathRestartTimer=null;if(ended&&hero.hp<=0)restartGame();},DEATH_RESTART_MS);
+}
+
 // V12: sprites aprobados de la pintura, precargados una sola vez.
 const itemArt={};
 for(const id of ['key','book','lantern','beer','hedgehog','shield','emblem','chainsaw','red']){
@@ -304,7 +317,7 @@ function drawAcquired(){
 const guardFrames=Array.from({length:4},(_,i)=>{const im=new Image();im.src=`sprites/shield_guard_${String(i+1).padStart(2,'0')}.png`;return im});const itemNames={sword:'Espada',shield:'Escudo',key:'Llave',chainsaw:'Motosierra'};const inventoryEl=document.querySelector('#inventory');const specialNames={book:'Libro',lantern:'Farol',hedgehog:'Erizo',emblem:'Emblema',red:'Objeto rojo'};
 function say(t,time=3){/* V12: sin mensajes de combate ni textos de ayuda sobre el juego. */}
 function spawn(x,type='basic',y=GROUND){if(type==='basic'){normalEnemyCounter++;if(normalEnemyCounter%3===0)type='hooligan'}let hp=type==='boss'?34:type==='chainsaw'?17:type==='heavy'?7:3;return {id:++enemyCounter,x,y,hp,max:hp,type,stun:0,inv:0,hitFlash:0,attack:0,face:-1,dead:false,drop:null,triggered:false,shot:1.5+Math.random()*1.2,throwPending:null,anim:'walk',animFrame:0,animTime:0,attackWindup:0,attackPending:false,deathTime:0,dropReleased:false,role:type==='hooligan'?'knife':'melee'}}
-function reset(){halloCooldown=0;halloNearby=false;hero={x:140,y:GROUND,face:1,hp:MAX_HP,state:'idle',frame:0,elapsed:0,inv:0,dodgeDir:0,combo:0,comboTime:0,owned:new Set(['sword']),equipped:['sword'],attackSlot:'sword',defenseSlot:'dodge',uniqueSlot:null,beers:0,swing:0,jumpHeight:0,jumpV:0,crouch:false,blocking:false,blockTime:0,hitTime:0};enemies=[];drops=[];projectiles=[];phases=[{start:0,end:1800,count:5,spawned:false,cleared:false},{start:1800,end:3600,count:12,spawned:false,cleared:false,kills:0,shieldGiven:false},{start:3600,end:5400,count:15,spawned:false,cleared:false,midBoss:false},{start:5400,end:7200,count:9,spawned:false,cleared:false}];cam=0;ended=false;interior=false;castleWave=0;bossSpawned=false;enemyCounter=0;normalEnemyCounter=0;attackHits=new Set();acquiredNotice=null;acquiredQueue=[];seenItemTutorials.clear();say('PARTE 1 — Enfrentá la primera oleada. La llave está más adelante.');spawnPhase(0);renderInventory()}
+function reset(){cancelDeathRestart();halloCooldown=0;halloNearby=false;hero={x:140,y:GROUND,face:1,hp:MAX_HP,state:'idle',frame:0,elapsed:0,inv:0,dodgeDir:0,combo:0,comboTime:0,owned:new Set(['sword']),equipped:['sword'],attackSlot:'sword',defenseSlot:'dodge',uniqueSlot:null,beers:0,swing:0,jumpHeight:0,jumpV:0,crouch:false,blocking:false,blockTime:0,hitTime:0};enemies=[];drops=[];projectiles=[];phases=[{start:0,end:1800,count:5,spawned:false,cleared:false},{start:1800,end:3600,count:12,spawned:false,cleared:false,kills:0,shieldGiven:false},{start:3600,end:5400,count:15,spawned:false,cleared:false,midBoss:false},{start:5400,end:7200,count:9,spawned:false,cleared:false}];cam=0;ended=false;interior=false;castleWave=0;bossSpawned=false;enemyCounter=0;normalEnemyCounter=0;attackHits=new Set();acquiredNotice=null;acquiredQueue=[];seenItemTutorials.clear();say('PARTE 1 — Enfrentá la primera oleada. La llave está más adelante.');spawnPhase(0);renderInventory()}
 function spawnPhase(p){let ph=phases[p];if(ph.spawned)return;ph.spawned=true;
 const xs=p===0?[420,680,930,1220,1530]:p===1?[1870,2000,2140,2270,2410,2550,2680,2820,2950,3100,3250,3400]:p===2?[3680,3810,3940,4060,4190,4320,4450,4570,4690,4810,4930,5050,5160,5260,5340]:[5520,5700,5870,6040,6210,6370,6510,6660,6800];
 xs.forEach((x,i)=>{const e=spawn(x,p===2&&i===13?'chainsaw':p===3&&i===8?'heavy':'basic',GROUND);
@@ -449,7 +462,7 @@ function damageHero(amount,fromX,message){
  hero.hp=Math.max(0,hero.hp-amount);hero.inv=1.10;hero.blocking=false;hero.crouch=false;
  hero.comboQueued=false;hero.jumpV=0;hero.jumpHeight=0;hero.hitTime=0;
  setState(hero.hp===0?'death':'hit');soundPlay('hurt');
- if(hero.hp===0){ended=true;say('DERROTA — Presioná Reiniciar.',999)}
+ if(hero.hp===0){ended=true;say('DERROTA — Reinicio automático en 15 segundos.',999);scheduleDeathRestart()}
  else say(message||`¡Te golpearon! -${amount} vida.`,1.5);
  return true;
 }
@@ -653,7 +666,7 @@ if(hero.beers>0){drawItemArt('beer',403,7,42,45);label('×'+hero.beers,449,34,'#
 if(hero.defenseSlot==='shield'){drawItemArt('shield',215,41,41,41);label('W',252,68,'#f6d88b','12px monospace')}
 if(hero.attackSlot==='chainsaw'){drawItemArt('chainsaw',294,43,53,34);label('D',349,68,'#f6d88b','12px monospace')}
 if(hero.uniqueSlot){drawItemArt(hero.uniqueSlot,407,46,47,34);label('R2',456,69,'#f6d88b','12px monospace')}
-if(!interior){for(let i=0;i<4;i++){rect(i*135,85,133,5,phases[i].cleared?'#80c7a0':phases[i].spawned?'#f0c46d':'#4b5c54')}}drawAcquired();if(hero.state==='death'&&hero.frame===anims.death[0]-1){rect(68,385,404,88,'rgba(7,15,17,.78)');label(tr('DERROTA'),175,433,'#ff9691','bold 39px monospace');label(({en:'PRESS START TO RESTART',es:'START PARA REINICIAR',de:'START FÜR NEUSTART'})[currentLanguage],110,464,'#ffe4ae','17px monospace')}}
+if(!interior){for(let i=0;i<4;i++){rect(i*135,85,133,5,phases[i].cleared?'#80c7a0':phases[i].spawned?'#f0c46d':'#4b5c54')}}drawAcquired();if(hero.state==='death'&&hero.frame===anims.death[0]-1){rect(68,385,404,88,'rgba(7,15,17,.78)');label(tr('DERROTA'),175,433,'#ff9691','bold 39px monospace');label(({en:'NEW GAME IN ',es:'NUEVA PARTIDA EN ',de:'NEUES SPIEL IN '})[currentLanguage]+deathRemaining()+'s',120,464,'#ffe4ae','17px monospace')}}
 // V11: render configurable. 30 FPS estables para Pi; ?fps=60 en equipos potentes.
 const requestedFPS=Number(new URLSearchParams(location.search).get('fps'));
 const targetFPS=[30,60].includes(requestedFPS)?requestedFPS:30;
@@ -751,12 +764,12 @@ updateRecommendedWifi(new URLSearchParams(location.search).get('wifi'));
 
 function sendPhoneState(){
  if(remoteSocket?.readyState!==WebSocket.OPEN||!phoneConnected)return;
- remoteSocket.send(JSON.stringify({type:'host_state',started:gameStarted,paused:gamePaused,attack:hero.attackSlot,defense:hero.defenseSlot,unique:hero.uniqueSlot,owned:[...hero.owned],beers:hero.beers,hp:hero.hp,ended:ended,itemNotice:!!acquiredNotice,storyPending,language:currentLanguage}));
+ remoteSocket.send(JSON.stringify({type:'host_state',started:gameStarted,paused:gamePaused,attack:hero.attackSlot,defense:hero.defenseSlot,unique:hero.uniqueSlot,owned:[...hero.owned],beers:hero.beers,hp:hero.hp,ended:ended,gameOver:ended&&hero.hp<=0,restartIn:deathRemaining(),itemNotice:!!acquiredNotice,storyPending,language:currentLanguage}));
 }
 function phoneStart(){
  if(!phoneConnected||acquiredNotice)return;
  if(!gameStarted){gameStarted=true;gamePaused=false;startEl.style.display='none';last=performance.now();if(!storyShown)showStoryPrologue()}
- else if(ended){restartGame();return}
+ else if(ended){return} // La muerte reinicia sola a los 15 s; no hace falta START.
  else gamePaused=!gamePaused;
  sendPhoneState();
 }
@@ -791,6 +804,7 @@ function connectRemote(){
   }
   if(msg.type==='input'&&phoneConnected){
     const a=msg.action;
+    if(ended&&hero.hp<=0)return; // Joystick bloqueado durante la cuenta regresiva.
     if(storyPending){if(msg.kind==='press'&&a==='punch')continueStoryPrologue();return;}
     if(acquiredNotice){if(msg.kind==='press'&&a==='punch')continueAfterItem();return;}
     if(msg.kind==='hold'&&a==='block'){remoteHold.block=!!msg.pressed;syncRemoteHold();}else if(msg.kind==='hold'&&Object.prototype.hasOwnProperty.call(remoteHold,a)){
@@ -821,6 +835,7 @@ connectRemote();
 // RESTART (desde pausa o derrota) reinicia toda la experiencia y exige otro QR.
 // El servidor invalida el código anterior y expulsa al mando viejo.
 function restartGame(){
+ cancelDeathRestart();
  clearRemoteHold();keys.clear();for(const key in hold)hold[key]=false;
  gameAudio.music.pause();gameAudio.music.currentTime=0;
  for(const voice of [...attackVoices,...pickupVoices,gameAudio.hurt,gameAudio.hallo,gameAudio.pickup]){voice.pause();voice.currentTime=0}

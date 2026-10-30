@@ -1,6 +1,0 @@
-COSWIG V5 - Control táctil con pantalla fija
-- Previene zoom por pellizco y doble toque en navegadores compatibles.
-- Impide scroll accidental y rebote del navegador durante el juego.
-- Mantiene el mando anclado al área visible y protege el tamaño de los textos.
-- Conserva teclado para el código de conexión y desplazamiento del inventario.
-Nota: algunos ajustes de accesibilidad del navegador o zoom del sistema pueden imponerse sobre la página.

@@ -1,1 +1,0 @@
-V4: W esquiva o bloquea con escudo equipado; A puño, S patada, D ataque equipado. L llave, R cerveza, disponibles según inventario. SELECT únicamente equipamiento de ataque/defensa. HUD muestra llave y cerveza junto a vida. Botones de acción sin subtítulos.

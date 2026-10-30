@@ -1,1 +1,0 @@
-V3: La cámara queda arriba, SELECT y START/PAUSA en el centro, y el joystick virtual a la izquierda y botones A/S/D/W a la derecha, a la misma altura incluso en pantalla vertical. Mantiene el resto de funciones de V2. Instalación: npm install; npm start. Abrir http://localhost:3000 en PC y escanear el QR con el celular.
