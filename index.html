@@ -378,7 +378,7 @@ say(['PARTE 1 — 5 enemigos. Conseguí la llave al final de la oleada.','PARTE 
 function renderInventory(){
  if(typeof sendPhoneState==='function')queueMicrotask(()=>{if(typeof phoneConnected!=='undefined')sendPhoneState()});
  inventoryEl.innerHTML='';
- const title=document.createElement('div');title.style.cssText='flex-basis:100%;color:#eacb86;font:13px monospace';title.textContent=`ATAQUE [L]: ${hero.attackSlot==='sword'?'Espada':'Motosierra'}   ·   DEFENSA [F]: ${hero.defenseSlot==='dodge'?'Esquiva':'Escudo'}   ·   R2: ${hero.uniqueSlot?(itemNames[hero.uniqueSlot]||specialNames[hero.uniqueSlot]):'Vacío'}`;inventoryEl.append(title);
+ const title=document.createElement('div');title.style.cssText='flex-basis:100%;color:#eacb86;font:13px monospace';title.textContent=`ATAQUE [L]: ${hero.attackSlot==='sword'?'Espada':hero.attackSlot==='chainsaw'?'Motosierra':'Bloqueado (conseguí la motosierra)'}   ·   DEFENSA [F]: ${hero.defenseSlot==='dodge'?'Esquiva':'Escudo'}   ·   R2: ${hero.uniqueSlot?(itemNames[hero.uniqueSlot]||specialNames[hero.uniqueSlot]):'Vacío'}`;inventoryEl.append(title);
  for(const [i,name] of ['sword','shield','chainsaw'].entries()){
   const b=document.createElement('button');b.className='item'+(hero.equipped.includes(name)?' equipped':'');
   b.disabled=!hero.owned.has(name);
@@ -394,8 +394,8 @@ function toggleEquip(name,slot){
  if(slot==='unique'&&name!=='shield'){hero.uniqueSlot=name;}
  else if(name==='sword'||name==='chainsaw')hero.attackSlot=name;
  else if(name==='shield')hero.defenseSlot='shield';
- hero.equipped=[hero.attackSlot,...(hero.defenseSlot==='shield'?['shield']:[]),...(hero.uniqueSlot?[hero.uniqueSlot]:[])];
- say(`ATAQUE: ${itemNames[hero.attackSlot]} · DEFENSA: ${hero.defenseSlot==='shield'?'Escudo':'Esquiva'}`,3);
+ hero.equipped=[...(hero.attackSlot?[hero.attackSlot]:[]),...(hero.defenseSlot==='shield'?['shield']:[]),...(hero.uniqueSlot?[hero.uniqueSlot]:[])];
+ say(`ATAQUE: ${hero.attackSlot?itemNames[hero.attackSlot]:'Bloqueado'} · DEFENSA: ${hero.defenseSlot==='shield'?'Escudo':'Esquiva'}`,3);
  renderInventory();
 }
 // V25: música elegida + voces originales. El audio empieza al salir del prólogo.
@@ -509,7 +509,7 @@ function damageHero(amount,fromX,message){
 function action(a){
  // Un grito por pulsación de ataque, incluso si la animación anterior sigue activa.
  // Se evita el sonido durante el prólogo, los modales y la pausa.
- if(a==='punch'||a==='kick'||a==='sword'||(a==='unique'&&['sword','chainsaw'].includes(hero.uniqueSlot)))soundPlay('attack');
+ if(a==='punch'||a==='kick'||(a==='sword'&&hero.attackSlot&&hero.owned.has(hero.attackSlot))||(a==='unique'&&['sword','chainsaw'].includes(hero.uniqueSlot)))soundPlay('attack');
  if(acquiredNotice){if(a==='punch')continueAfterItem();return;}
  if(ended)return;
  if(a==='jump'){if(hero.jumpHeight===0&&hero.jumpV===0&&!hero.blocking){hero.jumpV=410;hero.crouch=false}return}
@@ -525,6 +525,8 @@ function action(a){
  }
  if(a==='unique'){if(!hero.uniqueSlot){say('La ranura R2 está vacía. Equipá un objeto desde SELECT.',3);return}if(hero.uniqueSlot==='chainsaw'||hero.uniqueSlot==='sword'){if(['idle','walk'].includes(hero.state))setState(hero.uniqueSlot==='chainsaw'?'motosierra':'sword')}else say('Este objeto todavía no tiene habilidad de combate implementada.',3);return}
  if(a==='sword'){
+  // No reproducir espada, animación ni sonido si este héroe no tiene arma.
+  if(!hero.attackSlot||!hero.owned.has(hero.attackSlot))return;
   if(!['idle','walk'].includes(hero.state))return;
   setState(hero.attackSlot==='chainsaw'?'motosierra':'sword');return;
  }
@@ -571,7 +573,16 @@ while(hero.elapsed>=1/heroFPS&&loops++<5){
 }hitTest();for(const d of drops){if(!d.taken&&Math.abs(d.x-hero.x)<34){d.taken=true;
  // Reproducir al recoger, antes de que el primer hallazgo abra el modal y pause.
  soundPlay('pickup');
- if(d.type==='beer'){hero.beers++;announceItem('beer')}else{hero.owned.add(d.type);announceItem(d.type)}
+ if(d.type==='beer'){hero.beers++;announceItem('beer')}
+ else{
+  hero.owned.add(d.type);
+  // Al recogerla, el Gato Montés equipa la motosierra en D automáticamente.
+  if(selectedHero==='cat'&&d.type==='chainsaw'&&!hero.attackSlot){
+   hero.attackSlot='chainsaw';
+   hero.equipped=[...new Set([...hero.equipped,'chainsaw'])];
+  }
+  announceItem(d.type);
+ }
  renderInventory();if(acquiredNotice){cam=interior?0:Math.max(0,Math.min(WORLD-540,hero.x-190));return;}}}// Un "Hallo" al comenzar el acercamiento y luego cada 5 s
 // mientras haya enemigos avanzando desde la derecha hacia el héroe.
 const enemiesApproaching=enemies.some(e=>!e.dead&&e.x>hero.x+85&&e.x<hero.x+370&&e.stun<=0);
@@ -749,7 +760,19 @@ function confirmHeroSelection(){
  if(!selectingCharacter)return;
  selectedHero=selectionIndex===1?'cat':'original';selectingCharacter=false;
  selectionEl.classList.remove('is-active');selectionEl.setAttribute('aria-hidden','true');
+ // El Gato Montés comienza sin espada: D solo se habilita al conseguir la motosierra.
+ if(selectedHero==='cat'){
+  hero.owned.delete('sword');
+  hero.attackSlot=null;
+  hero.uniqueSlot=null;
+  hero.equipped=[];
+ }else{
+  hero.owned.add('sword');
+  hero.attackSlot='sword';
+  hero.equipped=['sword'];
+ }
  hero.state='idle';hero.frame=0;hero.elapsed=0;
+ renderInventory();
  showStoryPrologue();sendPhoneState();
 }
 heroChoiceButtons.forEach((btn,i)=>btn.addEventListener('click',()=>{selectionIndex=i;updateHeroSelection();confirmHeroSelection()}));
