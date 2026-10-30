@@ -1,0 +1,16 @@
+{
+  "name": "the-old-evil",
+  "version": "9.0.0",
+  "private": true,
+  "description": "THE OLD EVIL — arcade game and mobile controller",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.3",
+    "qrcode": "^1.5.4"
+  },
+  "engines": {
+    "node": ">=20 <25"
+  }
+}
