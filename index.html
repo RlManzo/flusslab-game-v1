@@ -67,7 +67,30 @@ button:active{box-shadow:0 0 0 transparent!important;transform:translate(2px,2px
 #storyPrologue .story-continue{position:absolute;bottom:clamp(6px,1.8vh,18px);left:50%;transform:translateX(-50%);padding:9px 12px;background:rgba(8,44,34,.88);color:#ecebd6;border:2px solid #f27672;box-shadow:3px 3px 0 #163c77;font:bold clamp(11px,1.5vh,16px)/1.2 monospace;letter-spacing:.06em;text-align:center;white-space:nowrap;animation:storyPulse 1.4s steps(2,end) infinite;pointer-events:none}
 @keyframes storyPulse{50%{opacity:.45}}
 @media (prefers-reduced-motion:reduce){#storyPrologue .story-continue{animation:none}}
-</style></head><body><div id="storyPrologue" role="dialog" aria-modal="true" aria-label="The Old Evil — Prologue" aria-hidden="true"><div class="story-page"><img class="story-art" src="assets/the_old_evil_prologue.png" alt="A mysterious maiden appears to the hero by the Elbe River, asking him to confront an ancient evil."/><div class="story-continue" id="storyContinue">PRESS A TO BEGIN</div></div></div><div id="startScreen" class="coswig-intro" role="region" aria-label="Pantalla de inicio de The Old Evil">
+
+/* V33 — Arcade character select; independent of story and game canvas. */
+#heroSelection{display:none;position:fixed;inset:0;z-index:105;background:repeating-linear-gradient(0deg,#071b15,#071b15 7px,#0b2b20 8px);align-items:center;justify-content:center;padding:18px;color:#f6e9cb;font-family:monospace;overflow:auto}
+#heroSelection.is-active{display:flex}
+.hero-select-shell{width:min(94vw,680px);max-height:100%;text-align:center;border:4px solid #ed7b77;box-shadow:8px 8px 0 #152d64;background:#103a2a;padding:clamp(12px,2vw,26px)}
+.hero-select-top{font-size:clamp(12px,2vw,19px);font-weight:bold;letter-spacing:.15em;color:#f6bd7e}
+.hero-select-shell h2{font:bold clamp(25px,4.3vw,44px)/1.1 monospace;text-shadow:3px 3px #ba4145;color:#fff1c4;margin:16px 0 9px}
+.hero-select-shell p{font:bold clamp(11px,1.7vw,16px) monospace;color:#d3e1c8}
+.hero-choices{display:flex;gap:clamp(8px,2vw,22px);justify-content:center;margin:22px auto}
+.hero-choice{width:45%;min-width:0;background:#163326;border:3px solid #476a55;color:#e9e6ce;display:flex;align-items:center;flex-direction:column;gap:7px;padding:10px;cursor:pointer;font-family:monospace;box-shadow:4px 4px 0 #04120f}
+.hero-choice.active{border:4px solid #ffcb6b!important;background:#31503b!important;box-shadow:0 0 0 3px #e36f67,5px 5px 0 #04120f!important;transform:translateY(-3px)}
+.hero-portrait{height:clamp(140px,32vh,270px);width:100%;display:flex;justify-content:center;align-items:end;overflow:hidden;background:linear-gradient(#264b39,#173226)}
+.hero-portrait img{height:95%;width:auto;max-width:95%;object-fit:contain;image-rendering:pixelated}
+.hero-choice strong{font-size:clamp(12px,2vw,20px)}.hero-choice small{color:#edaa9c;font:bold 12px monospace}
+.hero-select-footer{color:#f4cf8a;font:bold clamp(11px,1.8vw,15px) monospace}
+@media(max-width:430px){.hero-select-shell{padding:9px}.hero-choices{margin:13px auto}.hero-portrait{height:34vh}}
+</style></head><body><div id="heroSelection" role="dialog" aria-modal="true" aria-label="Choose your hero" aria-hidden="true">
+ <div class="hero-select-shell"><div class="hero-select-top">THE OLD EVIL · PLAYER SELECT</div>
+ <h2>CHOOSE YOUR HERO</h2><p>USE ◀ ▶ ON YOUR PHONE · PRESS A TO CONFIRM</p>
+ <div class="hero-choices">
+  <button type="button" class="hero-choice active" data-hero="original"><span class="hero-portrait"><img src="sprites/idle_01.png" alt="Original hero"/></span><strong>ORIGINAL HERO</strong><small>PLAYER 01</small></button>
+  <button type="button" class="hero-choice" data-hero="cat"><span class="hero-portrait"><img src="sprites/gato_montes/idle_01.png" alt="Wildcat hero"/></span><strong>WILDCAT</strong><small>PLAYER 02</small></button>
+ </div><div class="hero-select-footer">◀ PREVIOUS &nbsp; · &nbsp; NEXT ▶ &nbsp; · &nbsp; A SELECT</div></div>
+</div><div id="storyPrologue" role="dialog" aria-modal="true" aria-label="The Old Evil — Prologue" aria-hidden="true"><div class="story-page"><img class="story-art" src="assets/the_old_evil_prologue.png" alt="A mysterious maiden appears to the hero by the Elbe River, asking him to confront an ancient evil."/><div class="story-continue" id="storyContinue">PRESS A TO BEGIN</div></div></div><div id="startScreen" class="coswig-intro" role="region" aria-label="Pantalla de inicio de The Old Evil">
   <div class="intro-shell">
     <header class="intro-heading">
       <span class="intro-eyebrow">FLUSSLAB · INTERACTIVE EXPERIENCE</span>
@@ -170,7 +193,23 @@ function setLanguage(lang){
 
 'use strict';const cv=document.querySelector('#game'),c=cv.getContext('2d');c.imageSmoothingEnabled=false;
 const WORLD=7200,SEG=1800,GROUND=778,MAX_HP=12,anims={idle:[4,.28],walk:[6,.28],punch:[8,.28],kick:[8,.28],sword:[8,.28],dodge:[8,.28],shield:[4,.28],motosierra:[8,.384],cerveza:[8,.28],hit:[6,.34],death:[12,.325]},sprites={},background=[],layerAssets={};
-for(const [key,[n]] of Object.entries(anims)){sprites[key]=[];for(let i=1;i<=n;i++){const im=new Image();im.src=`sprites/${key}_${String(i).padStart(2,'0')}.png`;sprites[key].push(im)}}const enemyAnims={walk:[],punch:[]};
+for(const [key,[n]] of Object.entries(anims)){sprites[key]=[];for(let i=1;i<=n;i++){const im=new Image();im.src=`sprites/${key}_${String(i).padStart(2,'0')}.png`;sprites[key].push(im)}}// V33: segundo protagonista. Sprites V6 aprobados; cada fotograma se centra
+// por su silueta real y se ancla al suelo para evitar saltos de escala.
+const catAnims={idle:4,walk:7,punch:5,kick:5,sword:5,dodge:5,shield:5,motosierra:4,cerveza:3,hit:5,death:4};
+const catFiles={idle:'idle',walk:'walk',punch:'punch',kick:'kick',sword:'punch',dodge:'dodge',shield:'shield',motosierra:'chainsaw',cerveza:'beer',hit:'hurt',death:'death'};
+const catSprites={};
+for(const [state,n] of Object.entries(catAnims)){
+ catSprites[state]=[];
+ for(let i=1;i<=n;i++){
+  const img=new Image();img.src=`sprites/gato_montes/${catFiles[state]}_${String(i).padStart(2,'0')}.png`;
+  catSprites[state].push(img);
+ }
+}
+const catBounds={"idle_02.png":[1,1,98,133],"shield_02.png":[0,1,106,120],"key_02.png":[1,0,108,123],"beer_03.png":[1,1,99,142],"kick_02.png":[1,1,88,128],"punch_01.png":[0,1,97,126],"beer_01.png":[0,1,101,142],"kick_04.png":[1,1,93,127],"walk_02.png":[26,18,118,149],"shield_03.png":[1,1,113,120],"shield_04.png":[1,1,119,120],"death_02.png":[3,3,149,89],"punch_05.png":[1,1,112,126],"walk_03.png":[21,18,121,149],"punch_03.png":[1,1,107,125],"chainsaw_01.png":[4,3,146,130],"hurt_05.png":[1,0,107,127],"hurt_03.png":[0,0,97,127],"kick_01.png":[1,1,94,128],"punch_04.png":[1,1,111,125],"key_01.png":[0,0,103,122],"shield_01.png":[0,1,113,124],"dodge_04.png":[0,1,95,113],"dodge_03.png":[0,1,99,104],"hurt_02.png":[0,0,100,127],"chainsaw_02.png":[5,3,120,114],"death_01.png":[2,3,112,125],"walk_07.png":[24,18,118,149],"walk_06.png":[23,18,120,149],"walk_05.png":[28,18,114,149],"dodge_01.png":[0,1,90,124],"punch_02.png":[0,1,110,125],"beer_02.png":[1,1,99,140],"hurt_04.png":[0,1,109,123],"chainsaw_03.png":[2,9,133,158],"walk_04.png":[28,18,114,149],"idle_04.png":[0,1,93,132],"dodge_02.png":[0,1,94,108],"hurt_01.png":[0,0,97,127],"kick_05.png":[1,1,89,127],"death_04.png":[2,3,147,46],"shield_05.png":[0,1,131,131],"kick_03.png":[1,1,70,127],"idle_01.png":[0,1,100,132],"walk_01.png":[25,18,119,149],"chainsaw_04.png":[2,7,131,182],"death_03.png":[11,3,124,81],"dodge_05.png":[0,1,91,114],"idle_03.png":[1,1,92,133]};
+let selectedHero='original',selectingCharacter=false,selectionIndex=0;
+function heroFrameCount(state){return selectedHero==='cat'?catAnims[state]:anims[state][0]}
+function heroFrames(state){return selectedHero==='cat'?catSprites[state]:sprites[state]}
+const enemyAnims={walk:[],punch:[]};
 // Hooligan: misma máquina de estados, sprites propios y mayor fluidez.
 const hooliganAnims={idle:[],walk:[],punch:[],hit:[]};
 for(const [state,count] of Object.entries({idle:4,walk:7,punch:5,hit:4})){
@@ -500,7 +539,7 @@ function action(a){
 function interact(){if(!interior&&hero.x>6860){if(!hero.owned.has('key')){say('Necesitás encontrar la llave para abrir el castillo.',4);return}if(!phases[3].cleared){say('Derrotá la última oleada antes de entrar.');return}interior=true;hero.x=130;hero.y=GROUND;cam=0;enemies=[];projectiles=[];castleWave=1;for(let i=0;i<6;i++)enemies.push(spawn(240+i*44,i%2?'heavy':'basic'));say('CASTILLO — Derrotá a los guardias. Después aparecerá el jefe.',5);return}say('Los objetos se recogen automáticamente. E abre el castillo.')}
 window.addEventListener('keydown',e=>{if(acquiredNotice){if(!e.repeat&&(e.code==='KeyJ'||e.code==='Enter'))continueAfterItem();e.preventDefault();return;}if(e.code.startsWith('Digit')){const n=Number(e.code.slice(-1));if(n>=1&&n<=4&&!e.repeat)toggleEquip(['sword','shield','key','chainsaw'][n-1]);return}const a=keyMap[e.code];if(!a)return;e.preventDefault();if(!keys.has(e.code)){if(a==='defend')action('defend');else if(a in hold)hold[a]=true;else action(a)}keys.add(e.code)});window.addEventListener('keyup',e=>{const a=keyMap[e.code];keys.delete(e.code);if(a==='defend')hold.block=[...keys].some(k=>keyMap[k]==='defend');else if(a in hold)hold[a]=[...keys].some(k=>keyMap[k]===a)});window.addEventListener('blur',()=>{keys.clear();for(const k in hold)hold[k]=false});
 for(const id of ['left','right','up','down','punch','kick','sword','dodge','interact']){const b=document.getElementById(id);b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);if(id==='up')action('jump');else if(id==='down')hold.crouch=true;else if(id==='dodge')action('defend');else if(id in hold)hold[id]=true;else action(id)});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>{if(id==='down')hold.crouch=false;else if(id==='dodge')hold.block=false;else if(id in hold)hold[id]=false})}document.querySelector('#restart').onclick=()=>restartGame();
-function hitTest(){const state=hero.state;if(!['punch','kick','sword','motosierra'].includes(state))return;const active=state==='motosierra'?[2,3,4,5,6]:state==='punch'?[2,3,4,5,6]:state==='kick'?[3,4,5]:[2,3,4,5,6];if(!active.includes(hero.frame))return;const chain=hero.attackSlot==='chainsaw';const reach=state==='punch'?88:state==='kick'?112:state==='motosierra'?155:chain?135:145;const dmg=state==='punch'?(hero.combo===3?3:1):state==='kick'?2:state==='motosierra'?6:chain?5:3;for(const e of enemies){if(e.dead||attackHits.has(e.id)||e.inv>0)continue;const dx=e.x-hero.x;if(dx*hero.face>4&&dx*hero.face<reach&&Math.abs(e.y-hero.y)<44){e.hp-=dmg;e.stun=e.type==='boss'?.17:e.type==='chainsaw'?.24:.35;e.inv=.20;e.hitFlash=.26;
+function hitTest(){const state=hero.state;if(!['punch','kick','sword','motosierra'].includes(state))return;const active=selectedHero==='cat'?(state==='motosierra'?[1,2,3]:state==='kick'?[1,2,3]:[1,2,3,4]):state==='motosierra'?[2,3,4,5,6]:state==='punch'?[2,3,4,5,6]:state==='kick'?[3,4,5]:[2,3,4,5,6];if(!active.includes(hero.frame))return;const chain=hero.attackSlot==='chainsaw';const reach=state==='punch'?88:state==='kick'?112:state==='motosierra'?155:chain?135:145;const dmg=state==='punch'?(hero.combo===3?3:1):state==='kick'?2:state==='motosierra'?6:chain?5:3;for(const e of enemies){if(e.dead||attackHits.has(e.id)||e.inv>0)continue;const dx=e.x-hero.x;if(dx*hero.face>4&&dx*hero.face<reach&&Math.abs(e.y-hero.y)<44){e.hp-=dmg;e.stun=e.type==='boss'?.17:e.type==='chainsaw'?.24:.35;e.inv=.20;e.hitFlash=.26;
 if(e.type==='hooligan'){e.anim='hit';e.animFrame=0;e.animTime=0;e.throwPending=null}
 if(e.type==='chainsaw'){e.anim='hurt';e.animFrame=0;e.animTime=0;e.attackPending=false}e.x+=hero.face*(e.type==='boss'?7:22);attackHits.add(e.id);if(e.hp<=0){e.dead=true;
  // El nuevo villano completa su caída antes de soltar la motosierra.
@@ -511,20 +550,20 @@ if(e.type==='chainsaw'){e.anim='hurt';e.animFrame=0;e.animTime=0;e.attackPending
   if(e.extraDrop)drops.push({x:e.x+24,y:e.y,type:e.extraDrop,taken:false});
   say(`¡Objeto encontrado: ${e.drop==='beer'?'CERVEZA':itemNames[e.drop]}! Pasá por encima para recogerlo.`,4);
  }if(e.type==='boss'){ended=true;say('¡JEFE DERROTADO! NIVEL 1 COMPLETADO.',999)}else say('¡Enemigo derrotado!')}else say(`Impacto ${dmg} · ${e.type==='boss'?'JEFE':e.type==='chainsaw'?'MOTOSIERRA':'ENEMIGO'} ${Math.max(0,e.hp)}/${e.max}`,1.1)}}}
-function update(dt){if(!gameStarted||gamePaused||storyPending||acquiredNotice||(ended&&hero.state!=='death'))return;if(hero.state==='death'){hero.elapsed+=dt;while(hero.elapsed>=1/11&&hero.frame<anims.death[0]-1){hero.elapsed-=1/11;hero.frame++}return;}hero.inv=Math.max(0,hero.inv-dt);
+function update(dt){if(!gameStarted||gamePaused||storyPending||selectingCharacter||acquiredNotice||(ended&&hero.state!=='death'))return;if(hero.state==='death'){hero.elapsed+=dt;while(hero.elapsed>=1/(selectedHero==='cat'?7:11)&&hero.frame<heroFrameCount('death')-1){hero.elapsed-=1/(selectedHero==='cat'?7:11);hero.frame++}return;}hero.inv=Math.max(0,hero.inv-dt);
  // V16: el impacto interrumpe el ataque, pero no inmoviliza el stick.
  // Recuperación de seguridad si el navegador pierde tiempo de animación.
  if(hero.state==='hit'){hero.hitTime+=dt;if(hero.hitTime>.85)setState((hold.left||hold.right)?'walk':'idle')}else hero.hitTime=0;
  hero.blocking=hold.block&&hero.defenseSlot==='shield'&&hero.jumpHeight===0&&['idle','walk','shield'].includes(hero.state);hero.blockTime=hero.blocking?Math.min(.5,hero.blockTime+dt):0;if(hero.blocking&&hero.state!=='shield')setState('shield');if(!hero.blocking&&hero.state==='shield')setState('idle');hero.comboTime=Math.max(0,hero.comboTime-dt);const vx=Number(hold.right)-Number(hold.left);hero.y=GROUND;hero.crouch=hold.crouch&&hero.jumpHeight===0;if(hero.jumpV!==0||hero.jumpHeight>0){hero.jumpHeight+=hero.jumpV*dt;hero.jumpV-=1000*dt;if(hero.jumpHeight<=0){hero.jumpHeight=0;hero.jumpV=0}}if(vx&&hero.state!=='dodge'&&!hero.blocking&&hero.state!=='death')hero.face=Math.sign(vx);if(['idle','walk','hit'].includes(hero.state)){if(vx&&!hold.crouch&&!hero.blocking){if(hero.state!=='hit')setState('walk');const speed=hero.state==='hit'?140:220;const next=hero.x+vx*speed*dt;let currentPhase=Math.min(3,Math.floor(hero.x/SEG));let limit=interior?510:Math.min(WORLD-45,(currentPhase+1)*SEG-35+(phases[currentPhase].cleared?1500:0));hero.x=Math.max(40,Math.min(limit,next));hero.y=GROUND}else if(hero.state!=='hit')setState('idle')}if(hero.state==='motosierra'){hero.x=Math.max(40,Math.min(interior?510:WORLD-45,hero.x+hero.face*220/ (8/18)*dt))}
 if(hero.state==='dodge'){hero.x=Math.max(40,Math.min(interior?510:WORLD-45,hero.x+hero.dodgeDir*300*dt));hero.inv=.12}hero.elapsed+=dt;let loops=0;
-const heroFPS=hero.state==='hit'?10:hero.state==='death'?11:18;
+const heroFPS=hero.state==='hit'?10:hero.state==='death'?(selectedHero==='cat'?7:11):selectedHero==='cat'?(hero.state==='walk'?12:11):18;
 while(hero.elapsed>=1/heroFPS&&loops++<5){
  hero.elapsed-=1/heroFPS;
- if(hero.state==='death'&&hero.frame===anims.death[0]-1)break;
+ if(hero.state==='death'&&hero.frame===heroFrameCount('death')-1)break;
  hero.frame++;
- if(hero.frame>=anims[hero.state][0]){
-  if(hero.state==='shield'&&hero.blocking)hero.frame=3;
-  else if(hero.state==='death')hero.frame=anims.death[0]-1;
+ if(hero.frame>=heroFrameCount(hero.state)){
+  if(hero.state==='shield'&&hero.blocking)hero.frame=heroFrameCount('shield')-1;
+  else if(hero.state==='death')hero.frame=heroFrameCount('death')-1;
   else if(['idle','walk'].includes(hero.state))hero.frame=0;
   else if(hero.state==='punch'&&hero.comboQueued){hero.comboQueued=false;hero.combo=hero.comboTime>0?(hero.combo%3)+1:1;hero.comboTime=.85;hero.frame=0;attackHits=new Set()}
   else setState(vx&&!hold.crouch?'walk':'idle');
@@ -647,7 +686,13 @@ for(const e of enemies){
  }
 }
 for(const q of projectiles){const x=q.x-cam;if(x<0||x>540)continue;c.save();c.translate(x,q.y);c.rotate(q.vx>0?.15:3.0);rect(-15,-3,27,6,'#d8e4df');rect(-18,-5,9,10,'#78543b');c.restore()}
-const px=hero.x-cam,im=sprites[hero.state][hero.frame],scale=anims[hero.state][1];c.fillStyle='rgba(0,0,0,.4)';c.beginPath();c.ellipse(px,hero.y+3,Math.max(15,35-hero.jumpHeight*.12),6,0,0,Math.PI*2);c.fill();if(im?.complete&&im.naturalWidth){c.save();c.translate(Math.round(px),hero.y-hero.jumpHeight);c.scale(hero.face,hero.crouch?.68:1);c.globalAlpha=(hero.state==='hit'||hero.state==='death'||hero.blocking)?1:hero.inv>0&&Math.floor(performance.now()/90)%2===0?.65:1;if(hero.state==='hit'||hero.state==='death'){
+const px=hero.x-cam,im=heroFrames(hero.state)[hero.frame],scale=selectedHero==='cat'?1.05:anims[hero.state][1];c.fillStyle='rgba(0,0,0,.4)';c.beginPath();c.ellipse(px,hero.y+3,Math.max(15,35-hero.jumpHeight*.12),6,0,0,Math.PI*2);c.fill();if(im?.complete&&im.naturalWidth){c.save();c.translate(Math.round(px),hero.y-hero.jumpHeight);c.scale(hero.face,hero.crouch?.68:1);c.globalAlpha=(hero.state==='hit'||hero.state==='death'||hero.blocking)?1:hero.inv>0&&Math.floor(performance.now()/90)%2===0?.65:1;if(selectedHero==='cat'){
+ // Cada PNG tiene su propio lienzo; anclar por el contorno opaco real.
+ const filename=`${catFiles[hero.state]}_${String(hero.frame+1).padStart(2,'0')}.png`;
+ const b=catBounds[filename]||[0,0,im.width,im.height];
+ const center=(b[0]+b[2])/2;
+ c.drawImage(im,-center*scale,-b[3]*scale,im.width*scale,im.height*scale);
+}else if(hero.state==='hit'||hero.state==='death'){
  const b=heroPoseBounds[hero.state][hero.frame];
  const artCenter=(b[0]+b[2])/2;
  c.drawImage(im,-artCenter*scale,-b[3]*scale-HERO_FEET_OFFSET,im.width*scale,im.height*scale);
@@ -666,7 +711,7 @@ if(hero.beers>0){drawItemArt('beer',403,7,42,45);label('×'+hero.beers,449,34,'#
 if(hero.defenseSlot==='shield'){drawItemArt('shield',215,41,41,41);label('W',252,68,'#f6d88b','12px monospace')}
 if(hero.attackSlot==='chainsaw'){drawItemArt('chainsaw',294,43,53,34);label('D',349,68,'#f6d88b','12px monospace')}
 if(hero.uniqueSlot){drawItemArt(hero.uniqueSlot,407,46,47,34);label('R2',456,69,'#f6d88b','12px monospace')}
-if(!interior){for(let i=0;i<4;i++){rect(i*135,85,133,5,phases[i].cleared?'#80c7a0':phases[i].spawned?'#f0c46d':'#4b5c54')}}drawAcquired();if(hero.state==='death'&&hero.frame===anims.death[0]-1){rect(68,385,404,88,'rgba(7,15,17,.78)');label(tr('DERROTA'),175,433,'#ff9691','bold 39px monospace');label(({en:'NEW GAME IN ',es:'NUEVA PARTIDA EN ',de:'NEUES SPIEL IN '})[currentLanguage]+deathRemaining()+'s',120,464,'#ffe4ae','17px monospace')}}
+if(!interior){for(let i=0;i<4;i++){rect(i*135,85,133,5,phases[i].cleared?'#80c7a0':phases[i].spawned?'#f0c46d':'#4b5c54')}}drawAcquired();if(hero.state==='death'&&hero.frame===heroFrameCount('death')-1){rect(68,385,404,88,'rgba(7,15,17,.78)');label(tr('DERROTA'),175,433,'#ff9691','bold 39px monospace');label(({en:'NEW GAME IN ',es:'NUEVA PARTIDA EN ',de:'NEUES SPIEL IN '})[currentLanguage]+deathRemaining()+'s',120,464,'#ffe4ae','17px monospace')}}
 // V11: render configurable. 30 FPS estables para Pi; ?fps=60 en equipos potentes.
 const requestedFPS=Number(new URLSearchParams(location.search).get('fps'));
 const targetFPS=[30,60].includes(requestedFPS)?requestedFPS:30;
@@ -680,7 +725,7 @@ function loop(t){
  last=t;
  nextFrame=t+targetFrameMS-1;
  // Evitar render constante mientras el mando aún no inició o SELECT pausa el juego.
- if(!gameStarted || gamePaused || storyPending){return;}
+ if(!gameStarted || gamePaused || storyPending || selectingCharacter){return;}
  update(dt);draw();
 }
 reset();requestAnimationFrame(loop);
@@ -689,6 +734,34 @@ reset();requestAnimationFrame(loop);
 // Las pulsaciones sostenidas se sincronizan como estados; las acciones son eventos.
 let gameStarted=false,gamePaused=false;
 let storyPending=false,storyShown=false;
+const selectionEl=document.getElementById('heroSelection');
+const heroChoiceButtons=[...document.querySelectorAll('.hero-choice')];
+function updateHeroSelection(){
+ heroChoiceButtons.forEach((btn,i)=>{btn.classList.toggle('active',i===selectionIndex);btn.setAttribute('aria-pressed',String(i===selectionIndex))});
+}
+function showHeroSelection(){
+ selectingCharacter=true;selectionHoldActive=false;selectionIndex=0;selectedHero='original';updateHeroSelection();
+ selectionEl.classList.add('is-active');selectionEl.setAttribute('aria-hidden','false');
+ clearRemoteHold();keys.clear();for(const k in hold)hold[k]=false;sendPhoneState();
+}
+function moveHeroSelection(dir){if(!selectingCharacter)return;selectionIndex=(selectionIndex+dir+2)%2;updateHeroSelection()}
+function confirmHeroSelection(){
+ if(!selectingCharacter)return;
+ selectedHero=selectionIndex===1?'cat':'original';selectingCharacter=false;
+ selectionEl.classList.remove('is-active');selectionEl.setAttribute('aria-hidden','true');
+ hero.state='idle';hero.frame=0;hero.elapsed=0;
+ showStoryPrologue();sendPhoneState();
+}
+heroChoiceButtons.forEach((btn,i)=>btn.addEventListener('click',()=>{selectionIndex=i;updateHeroSelection();confirmHeroSelection()}));
+window.addEventListener('keydown',e=>{
+ if(!selectingCharacter)return;
+ if(['ArrowLeft','KeyA','ArrowRight','KeyD','KeyJ','Enter','Space'].includes(e.code)){
+  e.preventDefault();e.stopImmediatePropagation();if(e.repeat)return;
+  if(['ArrowLeft','KeyA'].includes(e.code))moveHeroSelection(-1);
+  else if(['ArrowRight','KeyD'].includes(e.code))moveHeroSelection(1);
+  else confirmHeroSelection();
+ }
+},true);
 const storyEl=document.getElementById('storyPrologue');
 function showStoryPrologue(){
  storyShown=true;storyPending=true;
@@ -764,17 +837,18 @@ updateRecommendedWifi(new URLSearchParams(location.search).get('wifi'));
 
 function sendPhoneState(){
  if(remoteSocket?.readyState!==WebSocket.OPEN||!phoneConnected)return;
- remoteSocket.send(JSON.stringify({type:'host_state',started:gameStarted,paused:gamePaused,attack:hero.attackSlot,defense:hero.defenseSlot,unique:hero.uniqueSlot,owned:[...hero.owned],beers:hero.beers,hp:hero.hp,ended:ended,gameOver:ended&&hero.hp<=0,restartIn:deathRemaining(),itemNotice:!!acquiredNotice,storyPending,language:currentLanguage}));
+ remoteSocket.send(JSON.stringify({type:'host_state',started:gameStarted,paused:gamePaused,attack:hero.attackSlot,defense:hero.defenseSlot,unique:hero.uniqueSlot,owned:[...hero.owned],beers:hero.beers,hp:hero.hp,ended:ended,gameOver:ended&&hero.hp<=0,restartIn:deathRemaining(),itemNotice:!!acquiredNotice,storyPending,selectingCharacter,selectedHero,language:currentLanguage}));
 }
 function phoneStart(){
  if(!phoneConnected||acquiredNotice)return;
- if(!gameStarted){gameStarted=true;gamePaused=false;startEl.style.display='none';last=performance.now();if(!storyShown)showStoryPrologue()}
+ if(!gameStarted){gameStarted=true;gamePaused=false;startEl.style.display='none';last=performance.now();showHeroSelection()}
+ else if(selectingCharacter){return}
  else if(ended){return} // La muerte reinicia sola a los 15 s; no hace falta START.
  else gamePaused=!gamePaused;
  sendPhoneState();
 }
 
-let phoneConnected=false, remoteSocket=null, remoteSession=null;
+let phoneConnected=false, remoteSocket=null, remoteSession=null,selectionHoldActive=false;
 const remoteHold={left:false,right:false,crouch:false,block:false};
 function syncRemoteHold(){
   for(const k of ['left','right','crouch','block'])hold[k]=remoteHold[k];
@@ -805,6 +879,13 @@ function connectRemote(){
   if(msg.type==='input'&&phoneConnected){
     const a=msg.action;
     if(ended&&hero.hp<=0)return; // Joystick bloqueado durante la cuenta regresiva.
+    if(selectingCharacter){
+      if(msg.kind==='press'&&a==='punch')confirmHeroSelection();
+      else if(msg.kind==='press'&&a==='start')confirmHeroSelection();
+      else if(msg.kind==='hold'&&msg.pressed&&(a==='left'||a==='right')){if(!selectionHoldActive){moveHeroSelection(a==='left'?-1:1);selectionHoldActive=true;}}
+      else if(msg.kind==='hold'&&!msg.pressed&&(a==='left'||a==='right'))selectionHoldActive=false;
+      return;
+    }
     if(storyPending){if(msg.kind==='press'&&a==='punch')continueStoryPrologue();return;}
     if(acquiredNotice){if(msg.kind==='press'&&a==='punch')continueAfterItem();return;}
     if(msg.kind==='hold'&&a==='block'){remoteHold.block=!!msg.pressed;syncRemoteHold();}else if(msg.kind==='hold'&&Object.prototype.hasOwnProperty.call(remoteHold,a)){
@@ -839,7 +920,8 @@ function restartGame(){
  clearRemoteHold();keys.clear();for(const key in hold)hold[key]=false;
  gameAudio.music.pause();gameAudio.music.currentTime=0;
  for(const voice of [...attackVoices,...pickupVoices,gameAudio.hurt,gameAudio.hallo,gameAudio.pickup]){voice.pause();voice.currentTime=0}
- gameStarted=false;gamePaused=false;storyPending=false;storyShown=false;
+ gameStarted=false;gamePaused=false;storyPending=false;storyShown=false;selectingCharacter=false;selectedHero='original';selectionIndex=0;selectionHoldActive=false;
+ selectionEl.classList.remove('is-active');selectionEl.setAttribute('aria-hidden','true');
  storyEl.classList.remove('is-active');storyEl.setAttribute('aria-hidden','true');
  startEl.style.display='flex';
  pauseEl.style.display='none';
@@ -862,7 +944,7 @@ function renderPauseLanguage(){const select=document.getElementById('hostLanguag
 document.getElementById('hostLanguage').addEventListener('change',e=>setLanguage(e.target.value));
 document.getElementById('pauseResume').addEventListener('click',()=>{gamePaused=false;last=performance.now();sendPhoneState()});
 setLanguage('en');
-setInterval(()=>{pauseEl.style.display=gameStarted&&gamePaused&&!storyPending?'flex':'none';sendPhoneState()},850);
+setInterval(()=>{pauseEl.style.display=gameStarted&&gamePaused&&!storyPending&&!selectingCharacter?'flex':'none';sendPhoneState()},850);
 // Salida reservada al operador con mouse: invisible para touch y el mando.
 // Nota: window.close() solo funciona si la ventana fue abierta por script o
 // si Chromium admite cierre desde una ventana tipo app/kiosco configurada para ello.
