@@ -47,7 +47,19 @@ const server=(SECURE?https.createServer({key:fs.readFileSync(tlsKey),cert:fs.rea
  if(!file.startsWith(ROOT+path.sep)||relative.includes('\0')){res.writeHead(403);return res.end('Forbidden')}
  fs.stat(file,(err,stat)=>{
   if(err||!stat.isFile()){res.writeHead(404);return res.end('Not found')}
-  res.writeHead(200,{'Content-Type':mime[path.extname(file).toLowerCase()]||'application/octet-stream','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
+  // V35: conservar los sprites entre recargas. HTML siempre se revalida.
+  const isPage=path.extname(file).toLowerCase()==='.html';
+  const tag='W/"'+stat.size.toString(16)+'-'+Math.floor(stat.mtimeMs).toString(16)+'"';
+  const headers={
+   'Content-Type':mime[path.extname(file).toLowerCase()]||'application/octet-stream',
+   'Cache-Control':isPage?'no-cache':'public, max-age=600, must-revalidate',
+   'ETag':tag,
+   'Last-Modified':stat.mtime.toUTCString(),
+   'X-Content-Type-Options':'nosniff'
+  };
+  if(req.headers['if-none-match']===tag){res.writeHead(304,headers);return res.end()}
+  res.writeHead(200,headers);
+  if(req.method==='HEAD')return res.end();
   fs.createReadStream(file).pipe(res);
  });
 });

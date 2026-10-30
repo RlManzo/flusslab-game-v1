@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>THE OLD EVIL — LEVEL 1</title><style>*{box-sizing:border-box}body{margin:0;background:#091814;color:#f3dfb6;font:15px system-ui}.wrap{max-width:620px;margin:auto;padding:10px}h1{font:26px Georgia;margin:8px 0}p{margin:6px 0 10px;color:#d0d9c7}.game{border:3px solid #b9a06b}canvas{display:block;width:100%;max-height:80vh;object-fit:contain;aspect-ratio:9/16;image-rendering:pixelated}.controls{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}button{border:1px solid #bea776;background:#203b32;color:#fff1d0;border-radius:4px;padding:11px 13px;font:inherit;touch-action:none;cursor:pointer}button:active{background:#49725b}small{color:#c4d4c6}#inventory{display:flex;gap:9px;flex-wrap:wrap;margin:10px 0}.item{border:1px solid #867b59;background:#142920;padding:8px;border-radius:5px}.item.equipped{border-color:#f5cf73;background:#3d3923}.item:disabled{opacity:.45}
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>THE OLD EVIL — LEVEL 1</title><link rel="preload" as="image" href="assets/the_old_evil_logo.png"><style>*{box-sizing:border-box}body{margin:0;background:#091814;color:#f3dfb6;font:15px system-ui}.wrap{max-width:620px;margin:auto;padding:10px}h1{font:26px Georgia;margin:8px 0}p{margin:6px 0 10px;color:#d0d9c7}.game{border:3px solid #b9a06b}canvas{display:block;width:100%;max-height:80vh;object-fit:contain;aspect-ratio:9/16;image-rendering:pixelated}.controls{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}button{border:1px solid #bea776;background:#203b32;color:#fff1d0;border-radius:4px;padding:11px 13px;font:inherit;touch-action:none;cursor:pointer}button:active{background:#49725b}small{color:#c4d4c6}#inventory{display:flex;gap:9px;flex-wrap:wrap;margin:10px 0}.item{border:1px solid #867b59;background:#142920;padding:8px;border-radius:5px}.item.equipped{border-color:#f5cf73;background:#3d3923}.item:disabled{opacity:.45}
 /* V10: modo exposición Raspberry Pi / televisor vertical */
 html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#000;overscroll-behavior:none}
 .wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;max-width:none;width:100%;height:100%;padding:0;margin:0;overflow:hidden;background:#000}
@@ -94,7 +94,7 @@ button:active{box-shadow:0 0 0 transparent!important;transform:translate(2px,2px
   <div class="intro-shell">
     <header class="intro-heading">
       <span class="intro-eyebrow">FLUSSLAB · INTERACTIVE EXPERIENCE</span>
-      <h1 class="game-logo-title"><img src="assets/the_old_evil_logo.png" alt="THE OLD EVIL"/></h1>
+      <h1 class="game-logo-title"><img src="assets/the_old_evil_logo.png" fetchpriority="high" alt="THE OLD EVIL"/></h1>
       <h2>AN ANCIENT EVIL RETURNS</h2>
       <p>Connect your phone. Explore the world. Discover items in the painting.</p>
     </header>
@@ -136,7 +136,7 @@ button:active{box-shadow:0 0 0 transparent!important;transform:translate(2px,2px
     </section>
     <section class="intro-pair" aria-label="Vincular el celular">
       <div class="intro-pair-label">SCAN TO CONNECT YOUR CONTROLLER</div>
-      <div class="intro-qr-frame"><img id="pairQR" alt="Código QR para vincular el celular con el juego" style="display:none"/></div>
+      <div class="intro-qr-frame"><span id="qrLoading" style="color:#213a30;text-align:center;font:bold 12px monospace;line-height:1.5">PREPARING<br>QR…</span><img id="pairQR" alt="Código QR para vincular el celular con el juego" style="display:none"/></div>
       <p id="pairStatus" class="intro-pair-status" role="status" aria-live="polite">Connecting to the local server…</p>
       <div class="intro-start-tip">Once connected, press <strong>START</strong> en el mando para comenzar.</div>
     </section>
@@ -192,8 +192,38 @@ function setLanguage(lang){
 }
 
 'use strict';const cv=document.querySelector('#game'),c=cv.getContext('2d');c.imageSmoothingEnabled=false;
+// V35: administrador de recursos con prioridad. No pedir cientos de PNG en el arranque.
+const assetJobs=new WeakMap(),assetQueue=[];
+let assetActive=0;
+const MAX_ASSET_DOWNLOADS=4;
+function pumpAssets(){
+ while(assetActive<MAX_ASSET_DOWNLOADS&&assetQueue.length){
+  assetQueue.sort((a,b)=>b.priority-a.priority);
+  const job=assetQueue.shift();
+  if(job.started)continue;
+  job.started=true;assetActive++;
+  const finish=()=>{assetActive--;job.resolve(job.image);pumpAssets()};
+  job.image.addEventListener('load',finish,{once:true});
+  job.image.addEventListener('error',finish,{once:true});
+  job.image.src=job.url;
+ }
+}
+function makeGameImage(url){
+ const image=new Image();image.decoding='async';
+ let resolve;const ready=new Promise(r=>resolve=r);
+ assetJobs.set(image,{image,url,priority:0,started:false,queued:false,ready,resolve});
+ return image;
+}
+function requestGameImage(image,priority=1){
+ const job=assetJobs.get(image);
+ if(!job)return Promise.resolve(image);
+ job.priority=Math.max(job.priority,priority);
+ if(!job.started&&!job.queued){job.queued=true;assetQueue.push(job)}
+ pumpAssets();return job.ready;
+}
+function requestFrames(frames,priority=1){for(const image of frames||[])requestGameImage(image,priority)}
 const WORLD=7200,SEG=1800,GROUND=778,MAX_HP=12,anims={idle:[4,.28],walk:[6,.28],punch:[8,.28],kick:[8,.28],sword:[8,.28],dodge:[8,.28],shield:[4,.28],motosierra:[8,.384],cerveza:[8,.28],hit:[6,.34],death:[12,.325]},sprites={},background=[],layerAssets={};
-for(const [key,[n]] of Object.entries(anims)){sprites[key]=[];for(let i=1;i<=n;i++){const im=new Image();im.src=`sprites/${key}_${String(i).padStart(2,'0')}.png`;sprites[key].push(im)}}// V33: segundo protagonista. Sprites V6 aprobados; cada fotograma se centra
+for(const [key,[n]] of Object.entries(anims)){sprites[key]=[];for(let i=1;i<=n;i++){const im=makeGameImage(`sprites/${key}_${String(i).padStart(2,'0')}.png`);sprites[key].push(im)}}// V33: segundo protagonista. Sprites V6 aprobados; cada fotograma se centra
 // por su silueta real y se ancla al suelo para evitar saltos de escala.
 const catAnims={idle:4,walk:7,punch:5,kick:5,sword:5,dodge:5,shield:5,motosierra:4,cerveza:3,hit:5,death:4};
 const catFiles={idle:'idle',walk:'walk',punch:'punch',kick:'kick',sword:'punch',dodge:'dodge',shield:'shield',motosierra:'chainsaw',cerveza:'beer',hit:'hurt',death:'death'};
@@ -201,7 +231,7 @@ const catSprites={};
 for(const [state,n] of Object.entries(catAnims)){
  catSprites[state]=[];
  for(let i=1;i<=n;i++){
-  const img=new Image();img.src=`sprites/gato_montes/${catFiles[state]}_${String(i).padStart(2,'0')}.png`;
+  const img=makeGameImage(`sprites/gato_montes/${catFiles[state]}_${String(i).padStart(2,'0')}.png`);
   catSprites[state].push(img);
  }
 }
@@ -214,20 +244,19 @@ const enemyAnims={walk:[],punch:[]};
 const hooliganAnims={idle:[],walk:[],punch:[],hit:[]};
 for(const [state,count] of Object.entries({idle:4,walk:7,punch:5,hit:4})){
  for(let i=1;i<=count;i++){
-  const img=new Image();img.src=`sprites/hooligan/${state}_${String(i).padStart(2,'0')}.png`;
+  const img=makeGameImage(`sprites/hooligan/${state}_${String(i).padStart(2,'0')}.png`);
   hooliganAnims[state].push(img);
  }
 }
 for(const [name,n] of Object.entries({walk:6,punch:8})){
- for(let i=1;i<=n;i++){const im=new Image();im.src=`sprites/enemigo/${name}_${String(i).padStart(2,'0')}.png`;enemyAnims[name].push(im)}
+ for(let i=1;i<=n;i++){const im=makeGameImage(`sprites/enemigo/${name}_${String(i).padStart(2,'0')}.png`);enemyAnims[name].push(im)}
 }
 // V28: villano alto con motosierra, sprites aprobados en la demo V3.
 // Cada pose tiene lienzo completo y fondo transparente; no recortar en runtime.
 const chainsawEnemyAnims={walk:[],attack:[],hurt:[],death:[]};
 for(const [state,count] of Object.entries({walk:6,attack:4,hurt:4,death:6})){
  for(let i=1;i<=count;i++){
-  const image=new Image();
-  image.src=`sprites/chainsaw_enemy/${state}_${String(i).padStart(2,'0')}.png`;
+  const image=makeGameImage(`sprites/chainsaw_enemy/${state}_${String(i).padStart(2,'0')}.png`);
   chainsawEnemyAnims[state].push(image);
  }
 }
@@ -251,15 +280,20 @@ function enemyHitTint(frame){
 }
 // V11: panorama precortado para no subir una textura de 8640px a la GPU cada frame.
 const PANORAMA_TILE_WIDTH=540, panoramaTiles=[];
-for(let i=0;i<16;i++){const im=new Image();im.decoding='async';im.src=`assets/panorama_tiles/tile_${String(i).padStart(2,'0')}.jpg`;panoramaTiles.push(im)}
+for(let i=0;i<16;i++)panoramaTiles.push(makeGameImage(`assets/panorama_tiles/tile_${String(i).padStart(2,'0')}.jpg`));
+function preparePanorama(camera=0){
+ const first=Math.max(0,Math.floor(camera/PANORAMA_TILE_WIDTH));
+ for(let i=first;i<Math.min(first+4,panoramaTiles.length);i++)requestGameImage(panoramaTiles[i],i<=first+1?9:3);
+}
 function drawPanorama(){
+ preparePanorama(cam);
  const first=Math.max(0,Math.floor(cam/PANORAMA_TILE_WIDTH)), offset=Math.round(cam-first*PANORAMA_TILE_WIDTH);
  for(let i=first;i<=Math.min(first+1,panoramaTiles.length-1);i++){
   const im=panoramaTiles[i];
   if(im?.complete&&im.naturalWidth)c.drawImage(im,(i-first)*PANORAMA_TILE_WIDTH-offset,0);
  }
 }
-for(const [name,file] of Object.entries({sky:'cielo_verde.png',far:'siluetas.png',ground:'piso.png',front:'decoracion_frontal.png'})){const im=new Image();im.src='assets/'+file;layerAssets[name]=im}
+for(const [name,file] of Object.entries({sky:'cielo_verde.png',far:'siluetas.png',ground:'piso.png',front:'decoracion_frontal.png'})){const im=makeGameImage('assets/'+file);layerAssets[name]=im}
 const skyColors=[['#102f26','#376e45'],['#153e2e','#4a7b4b'],['#1b4735','#658052'],['#253f36','#827c56']];
 function blendHex(a,b,t){const pa=a.slice(1).match(/../g).map(x=>parseInt(x,16)),pb=b.slice(1).match(/../g).map(x=>parseInt(x,16));return '#'+pa.map((v,i)=>Math.round(v+(pb[i]-v)*t).toString(16).padStart(2,'0')).join('')}
 function paintSky(){const section=Math.min(2,Math.floor(hero.x/SEG)),t=Math.max(0,Math.min(1,(hero.x%SEG)/SEG));const top=blendHex(skyColors[section][0],skyColors[section+1][0],t),bottom=blendHex(skyColors[section][1],skyColors[section+1][1],t);const grad=c.createLinearGradient(0,85,0,790);grad.addColorStop(0,top);grad.addColorStop(1,bottom);c.fillStyle=grad;c.fillRect(0,85,540,705);
@@ -286,10 +320,10 @@ function scheduleDeathRestart(){
 // V12: sprites aprobados de la pintura, precargados una sola vez.
 const itemArt={};
 for(const id of ['key','book','lantern','beer','hedgehog','shield','emblem','chainsaw','red']){
- const im=new Image();im.src=`assets/items/${id}.png`;itemArt[id]=im;
+ const im=makeGameImage(`assets/items/${id}.png`);itemArt[id]=im;
 }
 function drawItemArt(id,x,y,w,h){
- const im=itemArt[id];if(!im?.complete||!im.naturalWidth)return false;
+ const im=itemArt[id];if(im)requestGameImage(im,5);if(!im?.complete||!im.naturalWidth)return false;
  const s=Math.min(w/im.naturalWidth,h/im.naturalHeight);
  const dw=Math.round(im.naturalWidth*s),dh=Math.round(im.naturalHeight*s);
  c.drawImage(im,Math.round(x+(w-dw)/2),Math.round(y+(h-dh)/2),dw,dh);
@@ -353,10 +387,10 @@ function drawAcquired(){
  c.restore();
 }
 
-const guardFrames=Array.from({length:4},(_,i)=>{const im=new Image();im.src=`sprites/shield_guard_${String(i+1).padStart(2,'0')}.png`;return im});const itemNames={sword:'Espada',shield:'Escudo',key:'Llave',chainsaw:'Motosierra'};const inventoryEl=document.querySelector('#inventory');const specialNames={book:'Libro',lantern:'Farol',hedgehog:'Erizo',emblem:'Emblema',red:'Objeto rojo'};
+const guardFrames=Array.from({length:4},(_,i)=>makeGameImage(`sprites/shield_guard_${String(i+1).padStart(2,'0')}.png`));const itemNames={sword:'Espada',shield:'Escudo',key:'Llave',chainsaw:'Motosierra'};const inventoryEl=document.querySelector('#inventory');const specialNames={book:'Libro',lantern:'Farol',hedgehog:'Erizo',emblem:'Emblema',red:'Objeto rojo'};
 function say(t,time=3){/* V12: sin mensajes de combate ni textos de ayuda sobre el juego. */}
 function spawn(x,type='basic',y=GROUND){if(type==='basic'){normalEnemyCounter++;if(normalEnemyCounter%3===0)type='hooligan'}let hp=type==='boss'?34:type==='chainsaw'?17:type==='heavy'?7:3;return {id:++enemyCounter,x,y,hp,max:hp,type,stun:0,inv:0,hitFlash:0,attack:0,face:-1,dead:false,drop:null,triggered:false,shot:1.5+Math.random()*1.2,throwPending:null,anim:'walk',animFrame:0,animTime:0,attackWindup:0,attackPending:false,deathTime:0,dropReleased:false,role:type==='hooligan'?'knife':'melee'}}
-function reset(){cancelDeathRestart();halloCooldown=0;halloNearby=false;hero={x:140,y:GROUND,face:1,hp:MAX_HP,state:'idle',frame:0,elapsed:0,inv:0,dodgeDir:0,combo:0,comboTime:0,owned:new Set(['sword']),equipped:['sword'],attackSlot:'sword',defenseSlot:'dodge',uniqueSlot:null,beers:0,swing:0,jumpHeight:0,jumpV:0,crouch:false,blocking:false,blockTime:0,hitTime:0};enemies=[];drops=[];projectiles=[];phases=[{start:0,end:1800,count:5,spawned:false,cleared:false},{start:1800,end:3600,count:12,spawned:false,cleared:false,kills:0,shieldGiven:false},{start:3600,end:5400,count:15,spawned:false,cleared:false,midBoss:false},{start:5400,end:7200,count:9,spawned:false,cleared:false}];cam=0;ended=false;interior=false;castleWave=0;bossSpawned=false;enemyCounter=0;normalEnemyCounter=0;attackHits=new Set();acquiredNotice=null;acquiredQueue=[];seenItemTutorials.clear();say('PARTE 1 — Enfrentá la primera oleada. La llave está más adelante.');spawnPhase(0);renderInventory()}
+function reset(){window.__chainsawPrimed=false;cancelDeathRestart();halloCooldown=0;halloNearby=false;hero={x:140,y:GROUND,face:1,hp:MAX_HP,state:'idle',frame:0,elapsed:0,inv:0,dodgeDir:0,combo:0,comboTime:0,owned:new Set(['sword']),equipped:['sword'],attackSlot:'sword',defenseSlot:'dodge',uniqueSlot:null,beers:0,swing:0,jumpHeight:0,jumpV:0,crouch:false,blocking:false,blockTime:0,hitTime:0};enemies=[];drops=[];projectiles=[];phases=[{start:0,end:1800,count:5,spawned:false,cleared:false},{start:1800,end:3600,count:12,spawned:false,cleared:false,kills:0,shieldGiven:false},{start:3600,end:5400,count:15,spawned:false,cleared:false,midBoss:false},{start:5400,end:7200,count:9,spawned:false,cleared:false}];cam=0;ended=false;interior=false;castleWave=0;bossSpawned=false;enemyCounter=0;normalEnemyCounter=0;attackHits=new Set();acquiredNotice=null;acquiredQueue=[];seenItemTutorials.clear();say('PARTE 1 — Enfrentá la primera oleada. La llave está más adelante.');spawnPhase(0);renderInventory()}
 function spawnPhase(p){let ph=phases[p];if(ph.spawned)return;ph.spawned=true;
 const xs=p===0?[420,680,930,1220,1530]:p===1?[1870,2000,2140,2270,2410,2550,2680,2820,2950,3100,3250,3400]:p===2?[3680,3810,3940,4060,4190,4320,4450,4570,4690,4810,4930,5050,5160,5260,5340]:[5520,5700,5870,6040,6210,6370,6510,6660,6800];
 xs.forEach((x,i)=>{const e=spawn(x,p===2&&i===13?'chainsaw':p===3&&i===8?'heavy':'basic',GROUND);
@@ -552,7 +586,9 @@ if(e.type==='chainsaw'){e.anim='hurt';e.animFrame=0;e.animTime=0;e.attackPending
   if(e.extraDrop)drops.push({x:e.x+24,y:e.y,type:e.extraDrop,taken:false});
   say(`¡Objeto encontrado: ${e.drop==='beer'?'CERVEZA':itemNames[e.drop]}! Pasá por encima para recogerlo.`,4);
  }if(e.type==='boss'){ended=true;say('¡JEFE DERROTADO! NIVEL 1 COMPLETADO.',999)}else say('¡Enemigo derrotado!')}else say(`Impacto ${dmg} · ${e.type==='boss'?'JEFE':e.type==='chainsaw'?'MOTOSIERRA':'ENEMIGO'} ${Math.max(0,e.hp)}/${e.max}`,1.1)}}}
-function update(dt){if(!gameStarted||gamePaused||storyPending||selectingCharacter||acquiredNotice||(ended&&hero.state!=='death'))return;if(hero.state==='death'){hero.elapsed+=dt;while(hero.elapsed>=1/(selectedHero==='cat'?7:11)&&hero.frame<heroFrameCount('death')-1){hero.elapsed-=1/(selectedHero==='cat'?7:11);hero.frame++}return;}hero.inv=Math.max(0,hero.inv-dt);
+function update(dt){
+ if(hero&&hero.x>2900&&!window.__chainsawPrimed){window.__chainsawPrimed=true;prepareChainsawEnemy();}
+if(!gameStarted||gamePaused||storyPending||selectingCharacter||acquiredNotice||(ended&&hero.state!=='death'))return;if(hero.state==='death'){hero.elapsed+=dt;while(hero.elapsed>=1/(selectedHero==='cat'?7:11)&&hero.frame<heroFrameCount('death')-1){hero.elapsed-=1/(selectedHero==='cat'?7:11);hero.frame++}return;}hero.inv=Math.max(0,hero.inv-dt);
  // V16: el impacto interrumpe el ataque, pero no inmoviliza el stick.
  // Recuperación de seguridad si el navegador pierde tiempo de animación.
  if(hero.state==='hit'){hero.hitTime+=dt;if(hero.hitTime>.85)setState((hold.left||hold.right)?'walk':'idle')}else hero.hitTime=0;
@@ -671,7 +707,7 @@ for(const e of enemies){
  const x=e.x-cam;if(x<-170||x>700)continue;
  const isChainsaw=e.type==='chainsaw';
  const frames=isChainsaw?chainsawEnemyAnims:e.type==='hooligan'?hooliganAnims:enemyAnims;
- const frame=frames[e.anim||'walk']?.[e.animFrame||0];
+ const frame=frames[e.anim||'walk']?.[e.animFrame||0];if(frame)requestGameImage(frame,8);
  if(frame?.complete&&frame.naturalWidth){
   const scale=isChainsaw?1.08:e.type==='hooligan'?.90:e.type==='boss'?.48:.43;
   const w=frame.naturalWidth*scale,h=frame.naturalHeight*scale;
@@ -697,7 +733,7 @@ for(const e of enemies){
  }
 }
 for(const q of projectiles){const x=q.x-cam;if(x<0||x>540)continue;c.save();c.translate(x,q.y);c.rotate(q.vx>0?.15:3.0);rect(-15,-3,27,6,'#d8e4df');rect(-18,-5,9,10,'#78543b');c.restore()}
-const px=hero.x-cam,im=heroFrames(hero.state)[hero.frame],scale=selectedHero==='cat'?1.05:anims[hero.state][1];c.fillStyle='rgba(0,0,0,.4)';c.beginPath();c.ellipse(px,hero.y+3,Math.max(15,35-hero.jumpHeight*.12),6,0,0,Math.PI*2);c.fill();if(im?.complete&&im.naturalWidth){c.save();c.translate(Math.round(px),hero.y-hero.jumpHeight);c.scale(hero.face,hero.crouch?.68:1);c.globalAlpha=(hero.state==='hit'||hero.state==='death'||hero.blocking)?1:hero.inv>0&&Math.floor(performance.now()/90)%2===0?.65:1;if(selectedHero==='cat'){
+const px=hero.x-cam,im=heroFrames(hero.state)[hero.frame],scale=selectedHero==='cat'?1.05:anims[hero.state][1];if(im)requestGameImage(im,10);c.fillStyle='rgba(0,0,0,.4)';c.beginPath();c.ellipse(px,hero.y+3,Math.max(15,35-hero.jumpHeight*.12),6,0,0,Math.PI*2);c.fill();if(im?.complete&&im.naturalWidth){c.save();c.translate(Math.round(px),hero.y-hero.jumpHeight);c.scale(hero.face,hero.crouch?.68:1);c.globalAlpha=(hero.state==='hit'||hero.state==='death'||hero.blocking)?1:hero.inv>0&&Math.floor(performance.now()/90)%2===0?.65:1;if(selectedHero==='cat'){
  // Cada PNG tiene su propio lienzo; anclar por el contorno opaco real.
  const filename=`${catFiles[hero.state]}_${String(hero.frame+1).padStart(2,'0')}.png`;
  const b=catBounds[filename]||[0,0,im.width,im.height];
@@ -739,6 +775,21 @@ function loop(t){
  if(!gameStarted || gamePaused || storyPending || selectingCharacter){return;}
  update(dt);draw();
 }
+// Los recursos críticos se solicitan en paralelo con la conexión QR.
+function prepareFirstStage(){
+ preparePanorama(0);
+ requestFrames(sprites.idle,9);
+ requestFrames(enemyAnims.walk,6);
+ requestFrames(enemyAnims.punch,3);
+ requestFrames(hooliganAnims.walk,3);
+ for(const name of ['ground','far'])if(layerAssets[name])requestGameImage(layerAssets[name],4);
+}
+function prepareChosenHero(){
+ const bank=selectedHero==='cat'?catSprites:sprites;
+ for(const [state,frames] of Object.entries(bank))requestFrames(frames,['idle','walk','punch','kick','hit','death'].includes(state)?6:2);
+}
+function prepareChainsawEnemy(){for(const frames of Object.values(chainsawEnemyAnims))requestFrames(frames,2)}
+prepareFirstStage();
 reset();requestAnimationFrame(loop);
 
 // Control remoto desde el celular: WebSocket a través del servidor local.
@@ -772,6 +823,7 @@ function confirmHeroSelection(){
   hero.equipped=['sword'];
  }
  hero.state='idle';hero.frame=0;hero.elapsed=0;
+ prepareChosenHero();
  renderInventory();
  showStoryPrologue();sendPhoneState();
 }
@@ -787,20 +839,32 @@ window.addEventListener('keydown',e=>{
 },true);
 const storyEl=document.getElementById('storyPrologue');
 function showStoryPrologue(){
- storyShown=true;storyPending=true;
+ storyShown=true;storyPending=true;storyStarting=false;storyGeneration++;
  storyEl.classList.add('is-active');storyEl.setAttribute('aria-hidden','false');
  clearRemoteHold();keys.clear();for(const k in hold)hold[k]=false;
  sendPhoneState();
 }
+let storyStarting=false,storyGeneration=0;
 function continueStoryPrologue(){
- if(!storyPending)return;
- storyPending=false;storyEl.classList.remove('is-active');storyEl.setAttribute('aria-hidden','true');
- last=performance.now();nextFrame=0;
- clearRemoteHold();sendPhoneState();
- // V24: la misma pulsación A que inicia el gameplay intenta habilitar el audio.
- // En navegadores que bloquean autoplay remoto, la Raspberry debe usar la
- // configuración de kiosco indicada en README-V24-AUDIO-START.md.
+ if(!storyPending||storyStarting)return;
+ // La activación de audio ocurre en la pulsación A, antes de esperar recursos.
  unlockAudio();
+ storyStarting=true;const generation=storyGeneration;
+ const continueEl=document.getElementById('storyContinue');
+ const previous=continueEl.textContent;
+ continueEl.textContent='LOADING GAME…';
+ preparePanorama(0);prepareChosenHero();
+ const bank=selectedHero==='cat'?catSprites:sprites;
+ const critical=[panoramaTiles[0],panoramaTiles[1],bank.idle[0],bank.walk[0],enemyAnims.walk[0]];
+ // Mantener el prólogo visible mientras se preparan los primeros fotogramas.
+ // No bloquear indefinidamente por una descarga que falle.
+ Promise.race([Promise.all(critical.map(im=>requestGameImage(im,10))),new Promise(resolve=>setTimeout(resolve,9000))]).then(()=>{
+  if(generation!==storyGeneration)return;
+  storyStarting=false;continueEl.textContent=previous;
+  if(!storyPending)return; // RESTART pudo cancelar la operación.
+  storyPending=false;storyEl.classList.remove('is-active');storyEl.setAttribute('aria-hidden','true');
+  last=performance.now();nextFrame=0;clearRemoteHold();sendPhoneState();
+ });
 }
 window.addEventListener('keydown',e=>{
  if(storyPending&&(e.code==='KeyJ'||e.code==='Enter'||e.code==='Space')){
@@ -889,6 +953,7 @@ function connectRemote(){
     if(msg.wifiSsid)updateRecommendedWifi(msg.wifiSsid);
     document.getElementById('pairQR').src=msg.qr;
     document.getElementById('pairQR').style.display='block';
+    document.getElementById('qrLoading').style.display='none';
 
     statusEl.textContent=tr('Esperando a que escanees el QR con el celular…');
   }
@@ -939,6 +1004,7 @@ connectRemote();
 // RESTART (desde pausa o derrota) reinicia toda la experiencia y exige otro QR.
 // El servidor invalida el código anterior y expulsa al mando viejo.
 function restartGame(){
+ storyGeneration++;storyStarting=false;document.getElementById('storyContinue').textContent='PRESS A TO BEGIN';
  cancelDeathRestart();
  clearRemoteHold();keys.clear();for(const key in hold)hold[key]=false;
  gameAudio.music.pause();gameAudio.music.currentTime=0;
@@ -949,7 +1015,7 @@ function restartGame(){
  startEl.style.display='flex';
  pauseEl.style.display='none';
  phoneConnected=false;remoteSession=null;
- const qr=document.getElementById('pairQR');qr.removeAttribute('src');qr.style.display='none';
+ const qr=document.getElementById('pairQR');qr.removeAttribute('src');qr.style.display='none';document.getElementById('qrLoading').style.display='block';
  statusEl.classList.remove('connected');
  statusEl.textContent='Preparing a new QR code…';
  reset();setLanguage('en');
