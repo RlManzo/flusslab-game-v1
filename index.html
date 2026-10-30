@@ -623,7 +623,7 @@ for(const e of enemies){
  const frames=isChainsaw?chainsawEnemyAnims:e.type==='hooligan'?hooliganAnims:enemyAnims;
  const frame=frames[e.anim||'walk']?.[e.animFrame||0];
  if(frame?.complete&&frame.naturalWidth){
-  const scale=isChainsaw?.58:e.type==='hooligan'?.90:e.type==='boss'?.48:.43;
+  const scale=isChainsaw?1.08:e.type==='hooligan'?.90:e.type==='boss'?.48:.43;
   const w=frame.naturalWidth*scale,h=frame.naturalHeight*scale;
   c.save();c.translate(Math.round(x),e.y);
   // Los PNG del villano ya miran a la izquierda; no invertirlos al entrar.
@@ -642,7 +642,7 @@ for(const e of enemies){
  }
  if(!e.dead){
   if(e.type==='boss')label(tr('JEFE'),x-22,e.y-172,'#ffce94','13px monospace');
-  const hpY=e.y-(isChainsaw?175:158);
+  const hpY=e.y-(isChainsaw?312:158);
   rect(x-22,hpY,44,5,'#41201e');rect(x-22,hpY,44*e.hp/e.max,5,'#d45d4c');
  }
 }
@@ -652,10 +652,10 @@ const px=hero.x-cam,im=sprites[hero.state][hero.frame],scale=anims[hero.state][1
  const artCenter=(b[0]+b[2])/2;
  c.drawImage(im,-artCenter*scale,-b[3]*scale-HERO_FEET_OFFSET,im.width*scale,im.height*scale);
 }else c.drawImage(im,-im.width*scale/2,-im.height*scale,im.width*scale,im.height*scale);
-c.restore()}if(hero.blocking&&hero.defenseSlot==='shield'){
-  const sx=px+(hero.face>0?8:-49),sy=hero.y-hero.jumpHeight-89;
-  drawItemArt('shield',sx,sy,42,68);
- }if(document.querySelector('#hitboxes').checked){c.lineWidth=2;c.strokeStyle='#5aff9d';c.strokeRect(px-22,hero.y-75,44,75);if(hero.blocking){c.strokeStyle='#80c9fa';c.strokeRect(px+(hero.face>0?5:-34),hero.y-84,29,66)}c.strokeStyle='#ffcf58';for(const e of enemies)if(!e.dead)c.strokeRect(e.x-cam-24,e.y-100,48,100);if(['punch','kick','sword','motosierra'].includes(hero.state)){const reach=hero.state==='punch'?88:hero.state==='kick'?112:hero.state==='motosierra'?155:145;c.strokeStyle='#ff5e6c';c.strokeRect(px+(hero.face>0?5:-reach),hero.y-76,reach-5,85)}}
+c.restore()}
+// V32: el escudo ya está dibujado en los fotogramas shield_01..04 del héroe.
+// No dibujar assets/items/shield.png sobre esa animación.
+if(document.querySelector('#hitboxes').checked){c.lineWidth=2;c.strokeStyle='#5aff9d';c.strokeRect(px-22,hero.y-75,44,75);if(hero.blocking){c.strokeStyle='#80c9fa';c.strokeRect(px+(hero.face>0?5:-34),hero.y-84,29,66)}c.strokeStyle='#ffcf58';for(const e of enemies)if(!e.dead)c.strokeRect(e.x-cam-24,e.y-100,48,100);if(['punch','kick','sword','motosierra'].includes(hero.state)){const reach=hero.state==='punch'?88:hero.state==='kick'?112:hero.state==='motosierra'?155:145;c.strokeStyle='#ff5e6c';c.strokeRect(px+(hero.face>0?5:-reach),hero.y-76,reach-5,85)}}
 rect(0,0,540,84,'rgba(6,22,20,.93)');
 label(`OLD EVIL · ${interior?tr('CASTILLO'):`${tr('PARTE')} ${Math.min(4,Math.floor(hero.x/SEG)+1)}/4`}`,12,18,'#ffe4ae','15px monospace');
 // Corazones agrupados en dos filas para evitar superposiciones en el televisor.
