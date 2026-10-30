@@ -968,6 +968,7 @@ function connectRemote(){
     const a=msg.action;
     if(ended&&hero.hp<=0)return; // Joystick bloqueado durante la cuenta regresiva.
     if(selectingCharacter){
+      if(msg.kind==='hero_match'&&(a==='original'||a==='cat')){selectionIndex=a==='cat'?1:0;updateHeroSelection();confirmHeroSelection();}
       if(msg.kind==='press'&&a==='punch')confirmHeroSelection();
       else if(msg.kind==='press'&&a==='start')confirmHeroSelection();
       else if(msg.kind==='hold'&&msg.pressed&&(a==='left'||a==='right')){if(!selectionHoldActive){moveHeroSelection(a==='left'?-1:1);selectionHoldActive=true;}}
