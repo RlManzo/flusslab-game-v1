@@ -1,0 +1,1 @@
+V42: Se mueve el aviso de control conectado a una zona central libre, debajo de START, sin tapar los botones. Se conserva la animación de START y el aviso desaparece al iniciar. No se modifica el gameplay.
